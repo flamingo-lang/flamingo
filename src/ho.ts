@@ -37,7 +37,7 @@ const product_name_tuples = [
     [3, "flowers"]
 ];
 
-const ___ = "wildcard";
+const ___ = Symbol("wildcard");
 
 const input_rule = (tuples) => (iattrs, cb) =>
     tuples.filter((attrs) =>
