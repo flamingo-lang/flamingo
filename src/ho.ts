@@ -39,18 +39,25 @@ const product_name_tuples = [
 
 const ___ = Symbol("wildcard");
 
-const input_rule = (tuples) => (iattrs, cb) =>
+const flip = (shouldFlip, b) => shouldFlip ? !b : b;
+
+/**
+ * Takes a set of tuples `S` and produces a matching function
+ * that takes in a tuple (with optional wild cards) and finds
+ * every tuple in `S` that matches that tuple.
+ */
+const input_rule = (tuples) => (negated, iattrs, cb, ) =>
     tuples.filter((attrs) =>
-        attrs.every((_, i) => iattrs[i] === ___ || attrs[i] === iattrs[i]))
+        flip(negated, attrs.every((_, i) => iattrs[i] === ___ || attrs[i] === iattrs[i])))
         .flatMap(cb)
 
 const has_ordered = input_rule(has_ordered_tuples)
 const customer_city = input_rule(customer_city_tuples);
 const product_name = input_rule(product_name_tuples);
 
-const ans = has_ordered([___, ___], ([CustNo, ProdNo]) =>
-    customer_city([CustNo, ___], ([CustNo, City]) =>
-        product_name([ProdNo, ___], ([ProdNo, ProdName]) =>
+const ans = has_ordered(false, [___, ___], ([CustNo, ProdNo]) =>
+    customer_city(false, [CustNo, ___], ([_, City]) =>
+        product_name(false, [ProdNo, ___], ([_, ProdName]) =>
             [["ship_to", [ProdName, City]]])))
 
 console.log(ans);
