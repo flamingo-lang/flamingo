@@ -54,4 +54,10 @@ const ans = has_ordered([___, ___], ([CustNo, ProdNo]) =>
             [["ship_to", [ProdName, City]]])))
 
 console.log(ans);
-
+// =>
+// [
+//     [ 'ship_to', [ 'tea', 'london' ] ],
+//     [ 'ship_to', [ 'bread', 'paris' ] ],
+//     [ 'ship_to', [ 'flowers', 'San Francisco' ] ]
+// ]
+  
