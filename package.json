@@ -1,0 +1,10 @@
+{
+  "name": "flamingo2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Daniel Hines <d4hines@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.9.7"
+  }
+}
