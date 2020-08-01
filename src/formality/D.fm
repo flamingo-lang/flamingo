@@ -31,6 +31,33 @@ D.is_atom : String -> Bool
     Bool.not(D.is_var)
 
 // ;; "sets" of facts, implemented as lists
+T D.Set<A: Type>
+| D.Set.new(equal: A -> A -> Bool, members: List(A));
+
+D.Set.has<A: Type>(x: A, set: D.Set(A)): Bool
+  case set:
+  | case List.find<>(set.equal(x), set.members):
+    | none => Bool.false;
+    | some => Bool.true;;
+
+D.Set.add<A: Type>(x: A, set: D.Set(A)): D.Set(A)
+  if D.Set.has<>(x, set) then
+    set
+  else
+    case set:
+    | D.Set.new<>(set.equal, List.cons<>(x, set.members));
+
+D.Set.filter<A: Type>(f: A -> Bool, s: D.Set(A)): D.Set(A)
+    case s:
+    | D.Set.new<>(s.equal, List.filter<>(f, s.members));
+
+D.Set.singleton<A : Type>(equal: A -> A -> Bool, a: A) : D.Set(A)
+    D.Set.new(equal, [a])
+
+D.List.remove_duplicates
+
+D.Set.union
+
 // (define empty '())
 // (define (singleton x) (list x))
 // (define (union xs ys) (remove-duplicates (append xs ys)))
