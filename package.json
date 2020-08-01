@@ -4,7 +4,14 @@
   "main": "index.js",
   "author": "Daniel Hines <d4hines@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "pretest": "tsc",
+    "test": "node dist/foo.js"
+  },
   "devDependencies": {
     "typescript": "^3.9.7"
+  },
+  "dependencies": {
+    "immutable": "^4.0.0-rc.12"
   }
 }

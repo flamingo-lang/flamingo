@@ -1,5 +1,5 @@
 /* cSpell:disable*/
-
+import { ___, input_rule } from "./input_rule";
 // % product shipping example
 
 // customer_city(1, london).
@@ -37,19 +37,7 @@ const product_name_tuples = [
     [3, "flowers"]
 ];
 
-const ___ = Symbol("wildcard");
 
-const flip = (shouldFlip, b) => shouldFlip ? !b : b;
-
-/**
- * Takes a set of tuples `S` and produces a matching function
- * that takes in a tuple (with optional wild cards) and finds
- * every tuple in `S` that matches that tuple.
- */
-const input_rule = (tuples) => (negated, iattrs, cb, ) =>
-    tuples.filter((attrs) =>
-        flip(negated, attrs.every((_, i) => iattrs[i] === ___ || attrs[i] === iattrs[i])))
-        .flatMap(cb)
 
 const has_ordered = input_rule(has_ordered_tuples)
 const customer_city = input_rule(customer_city_tuples);
@@ -61,7 +49,7 @@ const ans = has_ordered(false, [___, ___], ([CustNo, ProdNo]) =>
             [["ship_to", [ProdName, City]]])))
 
 console.log(ans);
-// =>
+// =>[[X, Y]]
 // [
 //     [ 'ship_to', [ 'tea', 'london' ] ],
 //     [ 'ship_to', [ 'bread', 'paris' ] ],

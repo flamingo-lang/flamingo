@@ -1,0 +1,4 @@
+// Object level variables
+T Var
+| Var._;
+| Var.name(name: String);

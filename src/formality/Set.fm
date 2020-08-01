@@ -1,0 +1,22 @@
+T Set<A: Type>
+| Set.new(equal: A -> A -> Bool, members: List(A));
+
+Set.has<A: Type>(x: A, set: Set(A)): Bool
+  case set:
+  | case List.find<>(set.equal(x), set.members):
+    | none => Bool.false;
+    | some => Bool.true;;
+
+Set.add<A: Type>(x: A, set: Set(A)): Set(A)
+  if Set.has<>(x, set) then
+    set
+  else
+    case set:
+    | Set.new<>(set.equal, List.cons<>(x, set.members));
+
+Set.filter<A: Type>(f: A -> Bool, s: Set(A)): Set(A)
+    case s:
+    | Set.new<>(s.equal, List.filter<>(f, s.members));
+
+Set.singleton<A : Type>(equal: A -> A -> Bool, a: A) : Set(A)
+    Set.new(equal, [a])

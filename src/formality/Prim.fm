@@ -1,0 +1,31 @@
+T Prim
+| Sorts.Prim.string(string: String);
+| Sorts.Prim.number(nat: Nat);
+| Sorts.Prim.wildcard;
+
+Prim.equal(d1: Prim, d2: Prim) : Bool
+case d1
+   | case d2
+       | String.equal(s1.head, s2.head);
+       | Bool.false;
+       | Bool.false;;
+   | case d2
+       | Bool.false;
+       | Nat.equal(s1.head, s2.head);
+       | Bool.false;;
+   | case d2.head
+       | Bool.false;
+       | Bool.false;
+       | Bool.true;;
+
+Prim.is_wild(d : Prim): Bool
+case d
+   | Bool.false;
+   | Bool.false;
+   | Bool.true;
+
+
+Prim.equal_wild(d1: Prim, d2: Prim) : Bool
+    Bool.or(Prim.is_wild(d1),
+        Bool.or(Prim.is_wild(d2),
+            Prim.Equal(d1, d2)))

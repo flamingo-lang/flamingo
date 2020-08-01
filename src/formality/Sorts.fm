@@ -1,0 +1,21 @@
+T Sorts
+| customer_city;
+| product_name;
+| has_ordered;
+| ship_to;
+
+Sorts.equal(s1: Sort.Sorts, s2: Sort.Sorts) : Bool
+case s1
+    | case s2
+        | Bool.true;
+        | Bool.false;
+        | Bool.false;;
+    | case s2
+        | Bool.false;
+        | Bool.true;
+        | Bool.false;;
+    | case s2
+        | Bool.false;
+        | Bool.false;
+        | Bool.true;;
+

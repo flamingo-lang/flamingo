@@ -1,0 +1,42 @@
+
+
+Sort.Tuple : Type
+    Pair(Sort.Sorts, List(Data))
+
+Sort.equal(s1 : Sort.Tuple, s2 : Sort.Tuple) : Bool
+    case s1
+    | case s2
+        | Bool.and(Sort.Sorts.equal(s1.fst, s2.fst), Sort.Data.equal(s1.snd, s2.snd));;
+
+Sorts.how_to_use_The: The(List(Nat), [1, 2])
+  The.value<List(Nat)>([1,2])
+
+// Sort.example: Set(Sorts)
+//     Set.new<>(Sorts.equal, [Sorts.customer_city(1, "Chicago")])
+
+// Sorts.set(l: List(Sorts)) : Set(Sorts)
+//     Set.new<>(Sorts.equal, l)
+
+// Sorts.customer_city_tuples : Set(Sorts)
+//     Sorts.set([
+//         Sorts.customer_city(1, "Chicago"),
+//         Sorts.customer_city(2, "Paris"),
+//         Sorts.customer_city(3, "San Francisco"),
+//     ])
+
+// Sorts.has_ordered_tuples : Set(Sorts)
+//     Sorts.set([
+//         Sorts.has_ordered(1, 1),
+//         Sorts.has_ordered(2, 2),
+//         Sorts.has_ordered(3, 3),
+//     ])
+
+// Sorts.product_name_tuples : Set(Sorts)
+//     Sorts.set([
+//         Sorts.product_name(1, "tea"),
+//         Sorts.product_name(2, "bread"),
+//         Sorts.product_name(3, "flowers"),
+//     ])
+
+
+

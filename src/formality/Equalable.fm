@@ -1,0 +1,11 @@
+T Equalable<A: Type>
+| Equalable.new(is_equal: A -> A -> Bool);
+
+// trans: (a : A) -> (b : A) -> (c: A) -> (a_eq_b: is_equal(a, b)) -> (b_eq_c: is_equal(b, c) -> is_equal(B))
+// symmetric (a: A) -> 
+// refl: 
+
+Equalable.is_equal<A: Type>(e: Equalable(A), a: A, b: A): Bool
+  case e:
+  | e.is_equal(a, b);
+
