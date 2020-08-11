@@ -12,12 +12,7 @@
     "typescript": "^3.9.7"
   },
   "dependencies": {
-    "@types/lodash": "^4.14.158",
     "immutable": "^4.0.0-rc.12",
-    "lodash": "^4.17.19",
-    "lodash-es": "^4.17.15",
-    "nearley": "^2.19.5",
-    "rambda": "^5.10.0",
-    "ts-node": "^8.10.2"
+    "parsimmon": "^1.15.0"
   }
 }
