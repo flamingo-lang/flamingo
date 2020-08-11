@@ -1,0 +1,76 @@
+module todo
+enums
+    filters :: { all, active, completed }
+sorts
+    todos :: universe
+        attributes
+            order : integers
+
+    new_todo :: actions
+    todo_action :: actions
+        attributes
+            target : todos
+
+    toggle_todo :: todo_action
+    destroy_todo :: todo_action
+    edit_todo :: todo_action
+        attributes
+            text : string
+
+    toggle_all :: actions
+    clear_completed :: actions
+    init :: actions
+fluents
+    basic 
+        text : todos -> strings
+        completed : todos -> booleans
+
+        show_clear_completed : booleans
+
+        mark_all_as_complete_checked : booleans
+
+        input : strings
+    defined
+        show_main_and_footer : booleans
+        counter : integers
+axioms
+    occurs action(X) causes
+        create todo = Todo,
+        text(Todo) = Text,
+        completed(Todo) = false,
+        input = "",
+        Todo.order = Count
+    if
+        instance(X, new_todo),
+        input = Text,
+        Count = #count { X : instance(X, todos) }.
+
+    occurs action(X) causes
+        completed(Todo) = Completed,
+        mark_all_as_complete_checked = !Completed
+    if
+        instance(X, mark_all_as_complete_checked),
+        intsance(Todo, todos)
+        mark_all_as_complete_checked = Completed.
+
+     occurs action(X) causes completed(Todo) = !Completed if
+        instance(X, toggle_todo),
+        X.target = Todo,
+        completed(Todo) = Completed.
+    
+    occurs action(X) causes text(Todo) = Text if
+        instance(X, edit_todo),
+        X.target = Todo,
+        input = Text.
+    
+    occurs action(X) causes destroy Todo if
+        instance(X, destroy_todo),
+        X.target = Todo.
+    
+    occurs actions(X) causes destroy Todo if
+        instance(X, clear_completed),
+        instance(Todo, todos),
+        completed(Todo).
+
+    show_main_and_footer if #count { X : todos.id(X) } > 0.
+    show_clear_completed if #count { X : completed(X) } > 0.
