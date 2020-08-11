@@ -67,10 +67,14 @@ axioms
         instance(X, destroy_todo),
         X.target = Todo.
     
-    occurs actions(X) causes destroy Todo if
+    occurs action(X) causes destroy Todo if
         instance(X, clear_completed),
         instance(Todo, todos),
         completed(Todo).
 
     show_main_and_footer if #count { X : todos.id(X) } > 0.
     show_clear_completed if #count { X : completed(X) } > 0.
+
+    impossible occurs action(X) if
+        instance(X, clear_completed),
+        #count { X : completed(X) } == 0.
