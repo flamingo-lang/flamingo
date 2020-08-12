@@ -26,15 +26,38 @@ signature(f, ret, constant).
 % axiom d1
 %     occurs(X) causes f(Obj) = c1 if
 %         instance(X, a1),
-%         X.target = Obj.
-dlaw(d1)
-parlist(d1, pars(x1, x2)).
-par(1, pars(x1, x2), x1).
-par(2, pars(x1, x2), x2).
-action(d1, pars(x1, x2)).
-head(d1, pars(x1, x2), f(x2)) :- par(2, pars(x1, x2), x2).
+%         target(X) = Obj
+%         Obj != foo
+%         Y = Obj + 3
+
+dlaw(d1(Obj, X)) :- ...
+head(d1(Obj, X), f(Obj, c1)) :- dlaw(d1(Obj, X)).
+action(d1(Obj, X), X) :- dlaw(d1(Obj, X)).
+body(d1(Obj, X), pos(instance(X, a1))) :- dlaw(d1(Obj, X)).
+body(d1(Obj, X), pos(target(X, Obj))) :- dlaw(d1(Obj, X)).
+body(d1(Obj, X), neq(Obj, foo)) :- dlaw(d1(Obj, X)).
+% head(d1(Obj, X), p)
+% head(d1(Obj, X), neg(p))
+
+% head(d1(Obj, X), pos(p))
+% head(d1(Obj, X), neg(p))
+
+% body_satisfied(R,T) :-
+%     time(T),
+%     rule(R),
+%     #count{ F : body(R,pos(F)), boolean_fluent(F) }=PB,
+%     #count{ F : body(R,pos(F)), boolean_fluent(F), h(F,T) }=PB,
+%     #count{ F : body(R,neg(F)), boolean_fluent(F) }=NB,
+%     #count{ F : body(R,neg(F)), boolean_fluent(F), -h(F,T) }=NB.
 
 
-%     occurs(X) causes f(Obj) = c2 if
-%         instance(X, a2),
-%         X.target = Obj.
+% parlist(d1, pars(x1, x2)).
+% par(1, pars(x1, x2), x1).
+% par(2, pars(x1, x2), x2).
+% action(d1, pars(x1, x2)).
+% head(d1, pars(X1, X2), f(X2)) :- par(2, pars(X1, X2), X2).
+
+
+% %     occurs(X) causes f(Obj) = c2 if
+% %         instance(X, a2),
+% %         X.target = Obj.

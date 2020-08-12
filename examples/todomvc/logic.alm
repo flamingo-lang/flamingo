@@ -1,12 +1,28 @@
+module ephemeral
+sorts
+    ephemeral :: universe
+    create_ephemeral :: actions
+fluents
+    basic
+        exists : ephemeral -> booleans
+        available_id : integers
+axioms
+    occurs action(X) causes
+        exists(Todo),
+        available_id = Todo + 1
+    if
+        instance(X, create_ephemeral),
+        available_id = Todo.
+
 module todo
 enums
     filters :: { all, active, completed }
 sorts
-    todos :: universe
+    todos :: ephemeral
         attributes
             order : integers
 
-    new_todo :: actions
+    new_todo :: create_ephemeral
     todo_action :: actions
         attributes
             target : todos
@@ -32,18 +48,24 @@ fluents
         input : strings
     defined
         show_main_and_footer : booleans
-        counter : integers
 axioms
     occurs action(X) causes
-        create todo = Todo,
+        exists(Todo),
+        available_id = Todo + 1
+    if
+        instance(X, create_ephemeral),
+        available_id = Todo.
+
+    occurs action(X) causes
         text(Todo) = Text,
         completed(Todo) = false,
         input = "",
-        Todo.order = Count
+        order(Todo) = Count
     if
         instance(X, new_todo),
         input = Text,
-        Count = #count { X : instance(X, todos) }.
+        Count = #count { X : instance(X, todos) },
+        available_id = Todo.
 
     occurs action(X) causes
         completed(Todo) = Completed,
@@ -55,26 +77,29 @@ axioms
 
      occurs action(X) causes completed(Todo) = !Completed if
         instance(X, toggle_todo),
-        X.target = Todo,
+        target(X) = Todo,
         completed(Todo) = Completed.
     
     occurs action(X) causes text(Todo) = Text if
         instance(X, edit_todo),
-        X.target = Todo,
+        target(X) = Todo,
         input = Text.
     
     occurs action(X) causes destroy Todo if
         instance(X, destroy_todo),
-        X.target = Todo.
+        target(X) = Todo.
     
     occurs action(X) causes destroy Todo if
         instance(X, clear_completed),
         instance(Todo, todos),
         completed(Todo).
 
-    show_main_and_footer if #count { X : todos.id(X) } > 0.
+    show_main_and_footer if #count { X : instance(X, todos) } > 0.
     show_clear_completed if #count { X : completed(X) } > 0.
 
     impossible occurs action(X) if
         instance(X, clear_completed),
         #count { X : completed(X) } == 0.
+
+initially
+    available_id = 0.
