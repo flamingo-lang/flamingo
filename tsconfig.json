@@ -4,6 +4,8 @@
     "lib": ["ESNext", "DOM"],
     "module": "commonjs",
     "outDir": "out",
-    "sourceMap": true
+    "sourceMap": true,
+    "strict": true,
+    "downlevelIteration": true
   }
 }

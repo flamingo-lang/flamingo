@@ -5,14 +5,18 @@
   "author": "Daniel Hines <d4hines@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "pretest": "tsc",
-    "test": "node dist/foo.js"
+    "test": "ts-mocha ./test/**/*.spec.ts"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.12",
+    "@types/mocha": "^8.0.2",
+    "chai": "^4.2.0",
+    "mocha": "^8.1.1",
+    "ts-mocha": "^7.0.0",
     "typescript": "^3.9.7"
   },
   "dependencies": {
-    "immutable": "^4.0.0-rc.12",
-    "parsimmon": "^1.15.0"
+    "parsimmon": "^1.15.0",
+    "rambda": "^5.12.0"
   }
 }
