@@ -1,19 +1,3 @@
-module ephemeral
-sorts
-    ephemeral :: universe
-    create_ephemeral :: actions
-fluents
-    basic
-        exists : ephemeral -> booleans
-        available_id : integers
-axioms
-    occurs action(X) causes
-        exists(Todo),
-        available_id = Todo + 1
-    if
-        instance(X, create_ephemeral),
-        available_id = Todo.
-
 module todo
 enums
     filters :: { all, active, completed }
@@ -22,11 +6,12 @@ sorts
         attributes
             order : integers
 
-    new_todo :: create_ephemeral
     todo_action :: actions
         attributes
             target : todos
 
+    new_todo :: todo_action
+        text : string
     toggle_todo :: todo_action
     destroy_todo :: todo_action
     edit_todo :: todo_action

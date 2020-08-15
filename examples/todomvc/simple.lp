@@ -35,22 +35,23 @@ head(d1(Obj, X), f(Obj, c1)) :- dlaw(d1(Obj, X)).
 action(d1(Obj, X), X) :- dlaw(d1(Obj, X)).
 body(d1(Obj, X), pos(instance(X, a1))) :- dlaw(d1(Obj, X)).
 body(d1(Obj, X), pos(target(X, Obj))) :- dlaw(d1(Obj, X)).
-body(d1(Obj, X), neq(Obj, foo)) :- dlaw(d1(Obj, X)).
 % head(d1(Obj, X), p)
 % head(d1(Obj, X), neg(p))
 
 % head(d1(Obj, X), pos(p))
 % head(d1(Obj, X), neg(p))
 
-% body_satisfied(R,T) :-
-%     time(T),
-%     rule(R),
-%     #count{ F : body(R,pos(F)), boolean_fluent(F) }=PB,
-%     #count{ F : body(R,pos(F)), boolean_fluent(F), h(F,T) }=PB,
-%     #count{ F : body(R,neg(F)), boolean_fluent(F) }=NB,
-%     #count{ F : body(R,neg(F)), boolean_fluent(F), -h(F,T) }=NB.
+body_satisfied(R,T) :-
+    time(T),
+    rule(R),
+    #count{ F : body(R,pos(F)), boolean_fluent(F) }=PB,
+    #count{ F : body(R,pos(F)), boolean_fluent(F), h(F,T) }=PB,
+    #count{ F : body(R,neg(F)), boolean_fluent(F) }=NB,
+    #count{ F : body(R,neg(F)), boolean_fluent(F), -h(F,T) }=NB.
 
-
+holds(F, T + 1) :-
+    head(R, F),
+    body_satisfied(R, T)
 % parlist(d1, pars(x1, x2)).
 % par(1, pars(x1, x2), x1).
 % par(2, pars(x1, x2), x2).
