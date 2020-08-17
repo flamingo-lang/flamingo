@@ -2,8 +2,8 @@ module todo
 enums
     filters :: { all, active, completed }
 sorts
-    todos :: ephemeral
-    new_todo :: create_ephemeral
+    todos :: integers
+    new_todo :: actions
         attributes
             text : string
     todo_action :: actions
@@ -16,11 +16,20 @@ sorts
             text : string
     toggle_all :: actions
     clear_completed :: actions
-    init :: actions
+    set_active_filter :: actions
+        attributes
+            filter : filters
 fluents
     basic 
+        next_todo : todos
+        
+        destroyed : todos -> booleans
+        
         text : todos -> strings
+
         completed : todos -> booleans
+
+        active_filter : filters
 
         show_clear_completed : booleans
 
@@ -28,47 +37,56 @@ fluents
 
         input : strings
     defined
+        visible : todos -> booleans
         show_main_and_footer : booleans
 axioms
-    occurs action(X) causes
+    occurs(X) causes
         text(Todo) = Text,
         completed(Todo) = false,
         input = "",
+        next_todo = Todo + 1
     if
         instance(X, new_todo),
         input = Text,
-        next_active = Todo.
+        next_todo = Todo.
 
-    occurs action(X) causes
+    occurs(X) causes
         completed(Todo) = Completed,
         mark_all_as_complete_checked = !Completed
     if
         instance(X, mark_all_as_complete_checked),
-        intsance(Todo, todos)
         mark_all_as_complete_checked = Completed.
 
-     occurs action(X) causes completed(Todo) = !Completed if
+     occurs(X) causes completed(Todo) = !Completed if
         instance(X, toggle_todo),
         target(X) = Todo,
         completed(Todo) = Completed.
     
-    occurs action(X) causes text(Todo) = Text if
+    occurs(X) causes text(Todo) = Text if
         instance(X, edit_todo),
         target(X) = Todo,
         input = Text.
     
-    occurs action(X) causes destroy Todo if
-        instance(X, destroy_todo),
-        target(X) = Todo.
-    
-    occurs action(X) causes destroy Todo if
+    occurs(X) causes destroyed(Todo) if
         instance(X, clear_completed),
-        instance(Todo, todos),
         completed(Todo).
 
-    show_main_and_footer if instance(X, todos), active(X).
+    occurs(A) causes active_filter = F if
+        instance(A, set_active_filter),
+        filter(A) = F.
+
+    visible(Todo) if active_filter = all.
+    visible(Todo) if completed(Todo), active_filter = completed.
+    visible(Todo) if -completed(Todo), active_filter = active.
+
+    // false if visible(Todo), destroyed(Todo).
+
+    show_main_and_footer if active(_).
     show_clear_completed if completed(_).
 
     impossible occurs action(X) if
         instance(X, clear_completed),
         -show_clear_completed.
+
+initially
+    next_todo = 1.
