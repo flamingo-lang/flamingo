@@ -1,16 +1,20 @@
 module ephemeral
 sorts
     ephemeral :: universe 
-    activate_new :: universe
+    s1 :: ephemeral
+    s2 :: ephemeral
+actions
+    activate_new :: actions
         attributes
             sort : sorts
-    deactivate :: universe
-        target :: universe
+    deactivate :: actions
+        attributes
+            target : universe
 statics
     max_in_sort : sorts -> integers
 fluents
     basic
-        active : ephemeral -> booleans
+        active : sorts x universe -> booleans
         next_active : sorts -> ephemeral
         not_next_active : ephemeral -> booleans
 axioms
@@ -30,3 +34,8 @@ axioms
         sort(X, Sort),
         max_in_sort(Sort) = Max,
         next_active = Next,
+
+    occurs(X) causes -active(Target)
+        instance(X, deactivate),
+        target(Target).
+    

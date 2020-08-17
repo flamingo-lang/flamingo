@@ -1,0 +1,38 @@
+module 
+sorts
+    items
+        attributes
+
+    tasks :: items
+        attributes
+            text : string
+actions
+
+    activate :: actions
+        attributes
+            sort : nodes // set of names from sort hierarchy
+
+    write_task :: activate
+        attributes
+            i : tasks
+            text : string
+
+    deactivate :: actions
+        attributes
+            sort : nodes
+            element : universe
+fluents
+    basic
+        active : universe x nodes -> booleans
+        new : nodes -> universe
+axioms
+    occurs(A) causes active(X, S) if
+        instance(A, activate),
+        new(S) = X.
+
+    occurs(A) causes -active(X, S) if
+        instance(A, deactivate),
+        sort(A) = S,
+        element(A) = X.
+    
+    new(S) = X if active(X - 1, S), -active(X, S).

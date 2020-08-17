@@ -1,0 +1,26 @@
+sorts
+actions
+    insert :: actions
+        attributes
+            text : string
+            color : colors
+    
+fluents
+    basic
+        new : all_tasks
+        todo_tasks : integers
+        text : integers -> strings
+        colors : integers -> colors
+axioms 
+    f if g
+    -f if g
+
+    false if -g.
+
+    occurs(A) causes todo_task(I, T) if
+        instance(A, insert),
+        new = I,
+        text(A) = T.
+
+
+// 

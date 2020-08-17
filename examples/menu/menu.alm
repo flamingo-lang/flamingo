@@ -1,0 +1,22 @@
+module menu
+sorts
+    ingredients :: thing
+    entrees :: thing
+    allergies :: { peanut_allergy, wheat_allergy }
+statics
+    contains : thing x ingredient -> booleans
+fluents
+    basic
+        has_allergies : allergies -> booleans 
+        contains : things x ingredients -> booleans
+    defined
+        
+values
+    peanuts, wheat, roast_beef, mayo, jam, bread, peanut_butter in food
+    curry, pb_and_j, roast_beef_sandwhich in entrees
+
+    contains(pb_and_j, peanuts).
+    contains(pb_and_j, peanuts).
+    contains(pb_and_j, peanuts).
+    contains(pb_and_j, peanuts).
+
