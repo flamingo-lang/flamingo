@@ -1,3 +1,53 @@
-module single_door
+module door
 sorts
-    person :: 
+    people :: universe
+    person_action :: actions
+        attributes
+            person : people
+    set_key_down :: person_action
+    pick_key_up :: person_action
+    go_through_door :: person_action
+    lock_door :: actions
+    unlock_door :: actions
+fluents
+    basic
+        has_key : person -> booleans
+        is_inside_door : person -> booleans
+        door_locked : boolean
+    defined
+        locked_out : person -> booleans
+axioms
+    occurs(X) causes locked if
+        instance(X, lock_door).
+    occurs(X) causes -locked if
+        instance(unlock_door).
+
+    occurs(X) causes is_inside_door(P) if
+        instance(X, go_through_door),
+        person(X) = P,
+        -inside_door(P).
+    
+    occurs(X) causes is_inside_door(P) if
+        instance(X, go_through_door),
+        person(X) = P,
+        -inside_door(P).
+    
+    occurs(X) causes has_key(P) if
+        instance(X, pick_key_up),
+        person(X) = P.
+
+    occurs(X) causes -has_key(P) if
+        instance(X, set_key_down),
+        person(X) = P.   
+    
+    impossible occurs(X) if
+        instance(X, set_key_down),
+        -has_key(P).
+
+    impossible occurs(X) if
+        instance(X, pick_key_up),
+        has_key(P).
+    
+    locked_out(P) if -is_inside_door(P), -has_key(P).
+
+    false if locked_out(_).
