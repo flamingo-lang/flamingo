@@ -1,0 +1,61 @@
+module single_door
+sorts
+    thing :: universe
+    person :: thing
+    key :: thing
+    person_action :: action
+        attributes
+            person : person
+    locations :: { inside, outside }
+    lock_door :: person_action
+    unlock_door :: person_action
+    move_through_door :: person_action
+        attributes
+            location : locations
+    key_action :: person_action
+        attributes
+            key : key
+    set_key_down :: key_action
+    pick_key_up :: key_action
+fluents
+    basic
+        door_is_locked : booleans
+        holds_key : person x key -> booleans
+        location : thing -> locations
+axioms
+    occurs(X) causes location(P) = L if
+        instance(X, move_through_door),
+        location(X) = L,
+        person(X) = P.
+
+    occurs(X) causes location(K) = L if
+        instance(X, move_through_door),
+        location(X) = L,
+        person(X) = P,
+        holds_key(P, K).
+
+    impossible occurs(X) if
+        instance(X, move_through_door),
+        door_is_locked.
+    
+    occurs(X) causes holds_key(P, K) if
+        instance(X, pick_key_up),
+        person(X, P),
+        key(X, K).
+    
+    impossible occurs(X) if
+        instance(X, pick_key_up),
+        person(X, P),
+        key(X, K),
+        location(P) = L,
+        location(K) = L',
+        L != L'.
+
+    occurs(X) causes door_is_locked if
+        instance(X, lock_door).
+        
+    occurs(X) causes -door_is_locked if
+        instance(X, unlock_door).
+
+    impossible occurs(X) if
+        instance(X, lock_)

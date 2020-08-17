@@ -1,0 +1,29 @@
+module carrying_things
+import moving
+sorts
+    carriables :: things
+    carry :: move
+        attributes
+            carried_object : carriables
+fluents
+    basic
+        holding : agents x things -> booleans
+    defined
+        is_held : things -> booleans
+axioms
+    loc_in(C) = P if holding(T,C),
+        loc_in(T) = P.
+
+    loc_in(T) = P if holding(T,C),
+        loc_in(C) = P.
+
+    is held(X) if holding(T,X).
+
+    impossible occurs(X) if instance(X, move),
+        actor(X) = A,
+        is held(A).
+
+    impossible occurs(X) if instance(X, carry),
+        actor(X) = A,
+        carried object(X) = C,
+        -holding(A,C).

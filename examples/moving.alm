@@ -1,0 +1,46 @@
+module moving
+sorts
+    points, things :: universe
+    agents :: things
+    move :: actions
+        attributes
+            actor : agents
+            origin : points
+            dest : points
+statics
+    symmetric_connectivity : booleans
+    transitive_connectivity : booleans
+fluents
+    basic
+        connected : points x points -> booleans
+        loc_in : things -> points
+axioms
+    occurs(X) causes loc_in(A) = D if
+        instance(X, move),
+        actor(X) = A
+        dest(X) = D.
+    
+    connected(X, X) if instance(X, points).
+
+    connected(X, Y) if connected(Y, X), symmetric connectivity.
+
+    -connected(X, Y) if -connected(Y, X), symmetric connectivity.
+
+    connected(X, Z) if connected(X, Y),
+        connected(Y, Z),
+        transitive connectivity.
+
+    impossible occurs(X) if instance(X, move),
+        actor(X) = A;
+        loc_in(A) != origin(X).
+
+    impossible occurs(X) if instance(X, move),
+        actor(X) = A;
+        loc in(A) = dest(X).
+
+    impossible occurs(X) if instance(X, move),
+        actor(X) = A,
+        loc in(A) = O,
+        dest(X) = D,
+        -connected(O, D).
+        

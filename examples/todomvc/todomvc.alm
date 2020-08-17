@@ -3,21 +3,17 @@ enums
     filters :: { all, active, completed }
 sorts
     todos :: ephemeral
+    new_todo :: create_ephemeral
         attributes
-            order : integers
-
+            text : string
     todo_action :: actions
         attributes
             target : todos
-
-    new_todo :: todo_action
-        text : string
     toggle_todo :: todo_action
     destroy_todo :: todo_action
     edit_todo :: todo_action
         attributes
             text : string
-
     toggle_all :: actions
     clear_completed :: actions
     init :: actions
@@ -35,22 +31,13 @@ fluents
         show_main_and_footer : booleans
 axioms
     occurs action(X) causes
-        exists(Todo),
-        available_id = Todo + 1
-    if
-        instance(X, create_ephemeral),
-        available_id = Todo.
-
-    occurs action(X) causes
         text(Todo) = Text,
         completed(Todo) = false,
         input = "",
-        order(Todo) = Count
     if
         instance(X, new_todo),
         input = Text,
-        Count = #count { X : instance(X, todos) },
-        available_id = Todo.
+        next_active = Todo.
 
     occurs action(X) causes
         completed(Todo) = Completed,
@@ -79,12 +66,9 @@ axioms
         instance(Todo, todos),
         completed(Todo).
 
-    show_main_and_footer if #count { X : instance(X, todos) } > 0.
-    show_clear_completed if #count { X : completed(X) } > 0.
+    show_main_and_footer if instance(X, todos), active(X).
+    show_clear_completed if completed(_).
 
     impossible occurs action(X) if
         instance(X, clear_completed),
-        #count { X : completed(X) } == 0.
-
-initially
-    available_id = 0.
+        -show_clear_completed.

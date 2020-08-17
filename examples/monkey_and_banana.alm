@@ -1,0 +1,154 @@
+module moving
+sorts
+    points, things :: universe
+    agents :: things
+    move :: actions
+        attributes
+            actor : agents
+            origin : points
+            dest : points
+statics
+    symmetric_connectivity : booleans
+    transitive_connectivity : booleans
+fluents
+    basic
+        connected : points x points -> booleans
+        loc_in : things -> points
+axioms
+    occurs(X) causes loc_in(A) = D if
+        instance(X, move),
+        actor(X) = A
+        dest(X) = D.
+    
+    connected(X, X) if instance(X, points).
+
+    connected(X, Y) if connected(Y, X), symmetric connectivity.
+
+    -connected(X, Y) if -connected(Y, X), symmetric connectivity.
+
+    connected(X, Z) if connected(X, Y),
+        connected(Y, Z),
+        transitive connectivity.
+
+    impossible occurs(X) if instance(X, move),
+        actor(X) = A,
+        loc_in(A) != origin(X).
+
+    impossible occurs(X) if instance(X, move),
+        actor(X) = A,
+        loc in(A) = dest(X).
+
+    impossible occurs(X) if instance(X, move),
+        actor(X) = A,
+        loc in(A) = O,
+        dest(X) = D,
+        -connected(O, D).
+        
+
+module carrying_things
+import moving
+sorts
+    carriables :: things
+    carry :: move
+        attributes
+            carried_object : carriables
+fluents
+    basic
+        holding : agents x things -> booleans
+    defined
+        is_held : things -> booleans
+axioms
+    loc_in(C) = P if holding(T,C),
+        loc_in(T) = P.
+
+    loc_in(T) = P if holding(T,C),
+        loc_in(C) = P.
+
+    is held(X) if holding(T,X).
+
+    impossible occurs(X) if instance(X, move),
+        actor(X) = A,
+        is held(A).
+
+    impossible occurs(X) if instance(X, carry),
+        actor(X) = A,
+        carried object(X) = C,
+        -holding(A,C).
+
+module monkey_and_banana
+sorts
+    grasp :: actions
+        attributes
+            grasper : agents
+            grasped_thing : thigns
+    release :: actions
+        attributes
+            releaser : agents
+            released_thing : things
+fluents
+    defined
+        can_reach : agents x things -> booleans
+axioms
+    occurs(A) causes holding(X,Y ) if instance(A, grasp),
+        grasper(A) = X,
+        grasped_thing(A) = Y .
+
+    occurs(A) causes -holding(X,Y ) if instance(A, release),
+        releaser(A) = X,
+        released thing(A) = Y.
+
+    -holding(X, Y') if holding(X, Y), instance(Y' carriables), Y !== Y'
+
+    impossible occurs(A) if instance(A, grasp),
+        grasper(A) = X,
+        grasped thing(A) = Y ,
+        holding(X, Y).
+
+    impossible occurs(A) if instance(A, grasp),
+        grasper(A) = X,
+        grasped thing(A) = Y,
+        -can_reach(X,Y ).
+
+    impossible occurs(A) if instance(A, release),
+        releaser(A) = X,
+        released thing(A) = Y,
+        -holding(X, Y).
+
+    can_reach(M, O) if loc_in(M) = loc_in(O).
+
+
+module climbing
+    depends on moving
+sorts
+    elevations :: things
+    climb :: move
+        attributes
+        elevation : elevations
+axioms
+dest(A) = top(E) if elevation(A) = E.
+on its own top:
+false if loc in(E) = top(E).
+impossible occurs(X) if instance(X, climb),
+actor(X) = A,
+elevation(X) = O,
+loc in(O) 6= loc in(A).
+
+module main
+depends on carrying things, climbing
+
+sort declarations
+
+floor points, ceiling points, movable points :: points
+
+object constants
+object constants
+monkey : agents
+box : carriables, elevations
+banana : carriables
+
+function declarations
+statics
+basic under : 
+oor points  things ! booleans
+To de
+

@@ -1,0 +1,32 @@
+module ephemeral
+sorts
+    ephemeral :: universe 
+    activate_new :: universe
+        attributes
+            sort : sorts
+    deactivate :: universe
+        target :: universe
+statics
+    max_in_sort : sorts -> integers
+fluents
+    basic
+        active : ephemeral -> booleans
+        next_active : sorts -> ephemeral
+        not_next_active : ephemeral -> booleans
+axioms
+    not_next_active(Sort, X) if
+        instance(Sort, X),
+        -active(Y),
+        Y < X.
+
+    next_active(Sort, X) if -not_next_active(X).
+
+    occurs(X) causes active(Next) if
+        instance(X, activate_new),
+        next_active(Next).
+
+    impossible occurs(X) if
+        instance(X, activate_new),
+        sort(X, Sort),
+        max_in_sort(Sort) = Max,
+        next_active = Next,

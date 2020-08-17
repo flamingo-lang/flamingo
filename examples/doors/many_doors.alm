@@ -1,0 +1,36 @@
+module doors
+sorts
+    thing :: universe 
+    door :: thing
+    key :: thing
+        attributes
+            opens : door
+    person :: thing
+    person_action :: action
+        attributes
+            person : person
+    door_action :: action
+        attributes
+            door : door
+    lock_door :: door_action
+    go_inside :: door_action, person_action
+    go_outside :: door_action, person_action
+    set_key_down :: person_action
+    pick_key_up :: person_action
+fluents
+    basic
+        accessible : thing x person -> booleans
+        holds_key : person x key -> booleans
+        inside : thing x door -> booleans
+axioms
+    insi
+
+    occurs(X) causes active(Next) if
+        instance(X, activate_new),
+        next_active(Next).
+
+    impossible occurs(X) if
+        instance(X, activate_new),
+        sort(X, Sort),
+        max_in_sort(Sort) = Max,
+        next_active = Next,
