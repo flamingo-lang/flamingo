@@ -23,8 +23,6 @@ fluents
         holds_key : person x key -> booleans
         inside : thing x door -> booleans
 axioms
-    insi
-
     occurs(X) causes active(Next) if
         instance(X, activate_new),
         next_active(Next).
