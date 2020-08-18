@@ -58,29 +58,3 @@ into ASP and interpreted by the [Clingo solver](https://github.com/domoritz/clin
 [Modular Action Language ALM](https://arxiv.org/abs/1505.05022), a specification language
 with a rich history beginning with John McCarthy's
 [situation calculus](https://en.wikipedia.org/wiki/Situation_calculus).
-
-
-
-
-Let's break that down:
-- 🤖 _action language_ - Flamingo is a DSL for describing the _relationships
-between action and change_ in an ultra-compact way, an comes from a long
-line of AI research beginning with
-[Shakey the robot](https://en.wikipedia.org/wiki/Shakey_the_robot).
-- 💻 _for implementing user interfaces_ - Flamingo's is for web apps, and functions 
-as a drop-in replacement for state-management solutions like Redux.
-- _simplicity_ - In Flamingo, you describe relationships _directly_. There are no
-loops, callbacks, or other algorithms.
-- _modularity_ 
-- ✔️ Correctness - Flamingo's compiler automatically analyzes programs for
-consistency. Write declarative constraints, get thousands of tests for free.
-
-
-## Motivation
-
-_Marcello_: So how is the project coming?
-
-_Emily_: Well, it started out great! The requirements we got from our clients seemed
-very clear, and I was able to implement most of them in the first week or two. But
-then things started to go down hill... QA found 
-
