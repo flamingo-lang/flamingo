@@ -1,7 +1,6 @@
 module todo
-enums
-    filters :: { all, active, completed }
 sorts
+    filters :: { all, active, completed }
     todos :: integers
     new_todo :: actions
         attributes

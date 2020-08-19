@@ -1,0 +1,35 @@
+module tables
+sorts
+    indices :: naturals
+    lists :: naturals
+        attributes
+            length : indices
+    insert :: actions
+        attributes
+            where : lists
+            what : string
+fluents
+    basic
+        in : indices x lists -> booleans
+        text : lists x indices -> string
+    transient
+        new : lists -> indices
+axioms
+    occurs(A) causes in(I, L) if
+        instance(A, insert),       
+        where(A) = L,
+        what(A) = S,
+        new(L) = I.
+    
+    occurs(A) causes text(L, I + 1) = S if
+        instance(A, insert),
+        where(A) = L,
+        what(A) = S,
+        length(A) = I.
+
+    occurs(A) causes length(L) = X + 1 if
+        instance(A, insert),
+        where(A) = L,
+        length(L) = X.
+    
+    
