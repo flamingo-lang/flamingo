@@ -1,9 +1,5 @@
-% module simple
-% The law
-dom(S', X) :- subsort(S, S'), dom(S, X).
-% For every sort s :: s'
-sort(s).
-subsort(s, s').
+#const n = 1.
+
 % For every sort s :: {a, b, c}
 sort(s).
 dom(s, (a;b;c)).
@@ -17,41 +13,46 @@ attr(a(S0, S1,%*...,*%SN)) :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN).
 param(a, 0, s). param(a, 1, s1). %* ...,*% param(a, n, sn).
 ret(a, s').
 
-% For every static s : s0 x s1 ... sn -> s'
-is_static(s).
-static(s(S0,%*...,*%SN)) :- dom(s0, S0), %*...,*% dom(sn, SN).
-param(s, 0, s0). %* ...,*% param(s, n, sn).
-ret(s, s').
+% For every static st : s0 x s1 ... sn -> s'
+is_static(st).
+param(st, 0, s0). %* ...,*% param(s, n, sn).
+ret(st, s').
 
 % For every basic fluent b : s0 x s1 ... sn -> s'
 is_basic_fluent(b).
-basic_fluent(b(S0, S1, S2,%*...,*%SN)) :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN).
+fluent(basic, b(S0, S1, S2,%*...,*%SN, S')) :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN), dom(s', S').
 param(b, 0, s0). param(b, 1, s1). param(b, 2, s2). %* ...,*% param(b, n, sn).
 ret(b, s').
 
 % For every defined fluent d : s0 x s1 ... sn -> s'
 is_defined_fluent(d).
-defined_fluent(d(S0, S1, S2,%*...,*%SN)) :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN).
+fluent(defined,d(S0, S1, S2,%*...,*%SN)) :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN).
 param(d, 0, s0). param(d, 1, s1). param(d, 2, s2). %* ...,*% param(d, n, sn).
 ret(d, s').
 
 % For every state constraint with lable sc and variables X1..XN
 state_constraint(sc(X1, %*..,*%XN)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+
 % For every dynamic causal law with lable d and variables X1..XN
 dlaw(d(X1, %*..,*%XN)) :- dom(s1, X1), dom(s2, X2).
 
 % For every state constraint with label sc of the form "f(X0) if ..."
 head(sc(X1, %*..,*%XN), f(X0)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+
 % For every dynamic causal law with label d of the form
-% occurs(X0) causes f(X1) if ...
-head(d(X1, %*..,*%XN), f(X1)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+% occurs(X1) causes f(X2) if ...
+head(d(X1, %*..,*%XN), f(X2)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
 
 % For every conjunct in the body of rule R (being either a state constraint or dynamic causal law),
 % with variables X0..XN, match against the following cases:
-% f(X0)
+% f(X0) where f is a fluent
 body(r(X1, %*..,*%XN), pos(f(X0))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
-% -f(X0)
+% -f(X0) where f is a fluent
 body(r(X1, %*..,*%XN), neg(f(X0))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+% f(X0) where f is a static
+body(r(X1, %*..,*%XN), pos_static(f(X0))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+% -f(X0) where f is a static
+body(r(X1, %*..,*%XN), neg_static(f(X0))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
 % X1 > X2
 body(r(X1, %*..,*%XN), gt(X1, X2)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
 % X1 >= X2
@@ -65,64 +66,22 @@ body(r(X1, %*..,*%XN), eq(X1, X2)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn,
 % X1 != X2
 body(r(X1, %*..,*%XN), neq(X1, X2)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
 
-
-% sorts
-%     obj :: universe
-sort(obj, universe).
-%     a :: action
-sort(a, action).
-%         attributes
-%             target : obj
-attribute(a, target, obj).
-%     a1 :: a
-sort(a1, a).
-%     a2 :: a
-sort(a2, a).
-% fluents
-fluent(f, basic).
-signature(f, 1, obj).
-signature(f, ret, constant).
-%     basic
-%         f : obj -> constant
-% axioms
-% We'll use numbers as the names of the laws
-% axiom d1
-%     occurs(X) causes f(Obj) = c1 if
-%         instance(X, a1),
-%         target(X) = Obj
-%         Obj != foo
-%         Y = Obj + 3
-
-
-% Operators
-% A > B
-body(d1(A, B), gt(A, B)) :- dlaw(d1(A, B)).
-% A >= B
-% A < B
-% A <= B
-% A = B
-
-dlaw(d1(Obj, X)) :- ...
-head(d1(Obj, X), f(Obj, c1)) :- dlaw(d1(Obj, X)).
-action(d1(Obj, X), X) :- dlaw(d1(Obj, X)).
-body(d1(Obj, X), pos(instance(X, a1))) :- dlaw(d1(Obj, X)).
-body(d1(Obj, X), pos(target(X, Obj))) :- dlaw(d1(Obj, X)).
-% head(d1(Obj, X), p)
-% head(d1(Obj, X), neg(p))
-
-% head(d1(Obj, X), pos(p))
-% head(d1(Obj, X), neg(p))
-
-% 
+% The body of a rule R is satisfied at time T when all its conditions are satisfied.
 body_satisied(R,T) :-
     time(T),
     rule(R),
 
-    #count{ F : body(R,pos(F)), boolean_fluent(F) }=PB,
-    #count{ F : body(R,pos(F)), boolean_fluent(F), holds(F,T) }=PB,
+    #count{ F : body(R,pos(F)), fluent(_, F)}=PB,
+    #count{ F : body(R,pos(F)), fluent(_, F), holds(F,T) }=PB,
 
-    #count{ F : body(R,neg(F)), boolean_fluent(F) }=NB,
-    #count{ F : body(R,neg(F)), boolean_fluent(F), -holds(F,T) }=NB,
+    #count{ F : body(R,neg(F)), fluent(_, F)}=NB,
+    #count{ F : body(R,neg(F)), fluent(_, F), -holds(F,T)}=NB,
+
+    #count{ F : body(R,pos_static(F))}=PB,
+    #count{ F : body(R,pos_static(F)), static(F)}=PB,
+
+    #count{ F : body(R,neg_static(F))}=NB,
+    #count{ F : body(R,neg_static(F)), not static(F) }=NB,
 
     #count { E : body(R, E), greater_than(E)} = GT,
     #count { E : body(R, gt(A, B)), A > B} = GT,
@@ -142,14 +101,29 @@ body_satisied(R,T) :-
     #count { E : body(R, E), not_equal(E) } = NEQ,
     #count { E : body(R, neq(A, B)), A != B ) } = NEQ.
 
+% The head of a dynamic causal law becomes true at time T + 1
+% if its body is satisfied at time T.
+% Note: I removed the "action" clause. All ALM rules are required
+% to select an action using "instance(A, some_action)". Thus, the body
+% includes the action clause already.
 holds(F, T + 1) :-
+    dlaw(R),
     head(R, F),
-    body_satisied(R, T)
-% parlist(d1, pars(x1, x2)).
-% par(1, pars(x1, x2), x1).
-% par(2, pars(x1, x2), x2).
-% action(d1, pars(x1, x2)).
-% head(d1, pars(X1, X2), f(X2)) :- par(2, pars(X1, X2), X2).
+    body_satisied(R, T).
+
+% The head of a state constraint is true at time T
+% if its body is satisfied at time T.
+holds(F, T) :-
+    state_constraint(R),
+    head(R, F),
+    body_satisied(R, T).
+
+% Function constraint for basic fluents:
+% For every basic fluent f, there is a rule stating it is impossible for
+% f to have more than one value at a time T.
+% (In this example, f has arity 3).
+:- holds(f(_, _, _, X), T), holds(F(_, _, _, X'), T).
+
 % CWA for defined fluents
 -holds(F, I) :- fluent(defined, F), not holds(F, I).
 
@@ -166,7 +140,18 @@ holds(F, I + 1) :-
     not holds(F, I + 1),
     I < n.
 
+dom(S', X) :- static(link(S, S')), dom(S, X).
 
-% %     occurs(X) causes f(Obj) = c2 if
-% %         instance(X, a2),
-% %         X.target = Obj.
+% For every sort s :: s'
+sort(s).
+static(link(s, s')).
+
+% action is a subsort of universe
+static(link(action, universe)).
+
+% The static is_a relation
+static(is_a(X, S)) :- dom(S, X).
+
+% The static instance relation
+static(instance(X, S)) :- static(is_a(X, S)).
+static(instance(X, S1)) :- static(instance(X, S2)), static(link(S2, S1)).
