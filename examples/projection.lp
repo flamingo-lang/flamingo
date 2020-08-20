@@ -35,6 +35,7 @@ state_constraint(sc(X1, %*..,*%XN)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn
 
 % For every dynamic causal law with lable d and variables X1..XN
 dlaw(d(X1, %*..,*%XN)) :- dom(s1, X1), dom(s2, X2).
+action(d(X1, %*..,*%XN), X) :- dom(s1, X1), dom(s2, X2).
 
 % For every state constraint with label sc of the form "f(X0) if ..."
 head(sc(X1, %*..,*%XN), f(X0)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
@@ -102,14 +103,13 @@ body_satisied(R,T) :-
     #count { E : body(R, neq(A, B)), A != B ) } = NEQ.
 
 % The head of a dynamic causal law becomes true at time T + 1
-% if its body is satisfied at time T.
-% Note: I removed the "action" clause. All ALM rules are required
-% to select an action using "instance(A, some_action)". Thus, the body
-% includes the action clause already.
+% if, at time T, its action occurs and its body is satisfied.
 holds(F, T + 1) :-
     dlaw(R),
-    head(R, F),
-    body_satisied(R, T).
+    action(R, X),
+    occurs(X, T),
+    body_satisied(R, T),
+    head(R, F).
 
 % The head of a state constraint is true at time T
 % if its body is satisfied at time T.
