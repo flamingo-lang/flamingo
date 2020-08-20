@@ -146,12 +146,19 @@ dom(S', X) :- static(link(S, S')), dom(S, X).
 sort(s).
 static(link(s, s')).
 
+
+%%%%%% Universal Facts %%%%%%%%%
+% booleans are a subsort of universe.
+static(link(booleans, universe)).
+% booleans = {true, false}
+dom(booleans, (true; false)).
+
 % action is a subsort of universe
 static(link(action, universe)).
 
 % The static is_a relation
 static(is_a(X, S)) :- dom(S, X).
 
-% The static instance relation
+% The static instance relation, the transitive closure of is_a.
 static(instance(X, S)) :- static(is_a(X, S)).
 static(instance(X, S1)) :- static(instance(X, S2)), static(link(S2, S1)).
