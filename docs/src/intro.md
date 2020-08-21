@@ -28,7 +28,7 @@ complex, practical systems.
 
 In terms of language theory, ALM is a _logic programming language_, specifically
 an extension of [Datalog](https://en.wikipedia.org/wiki/Datalog) that adds an explicit
-notion of action and change, negative constraints, and powerful, object-oriented module
+notion of action and change, negative constraints, and a powerful, object-oriented module
 system[[3](#3)].
 
 ## Installing the Compiler
