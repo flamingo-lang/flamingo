@@ -122,7 +122,7 @@ holds(F, T) :-
 % For every basic fluent f, there is a rule stating it is impossible for
 % f to have more than one value at a time T.
 % (In this example, f has arity 3).
-:- holds(f(_, _, _, X), T), holds(F(_, _, _, X'), T).
+:- holds(f(_, _, _, X), T), holds(f(_, _, _, X'), T).
 
 % CWA for defined fluents
 -holds(F, I) :- fluent(defined, F), not holds(F, I).
