@@ -140,6 +140,9 @@ holds(F, I + 1) :-
     not holds(F, I + 1),
     I < n.
 
+% If S is a direct subsort of S' (that is, if link(S, S')
+% is true), then any elements in the domain of S are also
+% in the domain of S'.
 dom(S', X) :- static(link(S, S')), dom(S, X).
 
 % For every sort s :: s'
