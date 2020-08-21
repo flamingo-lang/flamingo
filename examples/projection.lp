@@ -38,11 +38,18 @@ dlaw(d(X1, %*..,*%XN)) :- dom(s1, X1), dom(s2, X2).
 action(d(X1, %*..,*%XN), X) :- dom(s1, X1), dom(s2, X2).
 
 % For every state constraint with label sc of the form "f(X0) if ..."
-head(sc(X1, %*..,*%XN), f(X0)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+head(sc(X1, %*..,*%XN), pos(f(X0))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+
+% For every state constraint with label sc of the form "-f(X0) if ..."
+head(sc(X1, %*..,*%XN), neg(f(X0))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
 
 % For every dynamic causal law with label d of the form
 % occurs(X1) causes f(X2) if ...
-head(d(X1, %*..,*%XN), f(X2)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+head(d(X1, %*..,*%XN), pos(f(X2))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+
+% For every dynamic causal law with label d of the form
+% occurs(X1) causes -f(X2) if ...
+head(d(X1, %*..,*%XN), neg(f(X2))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
 
 % For every conjunct in the body of rule R (being either a state constraint or dynamic causal law),
 % with variables X0..XN, match against the following cases:
@@ -109,15 +116,26 @@ holds(F, T + 1) :-
     action(R, X),
     occurs(X, T),
     body_satisied(R, T),
-    head(R, F).
+    head(R, pos(F)).
+
+-holds(F, T + 1) :-
+    dlaw(R),
+    action(R, X),
+    occurs(X, T),
+    body_satisied(R, T),
+    head(R, neg(F)).
 
 % The head of a state constraint is true at time T
 % if its body is satisfied at time T.
 holds(F, T) :-
     state_constraint(R),
-    head(R, F),
+    head(R, pos(F)),
     body_satisied(R, T).
 
+-holds(F, T) :-
+    state_constraint(R),
+    head(R, neg(F)),
+    body_satisied(R, T).
 % Function constraint for basic fluents:
 % For every basic fluent f, there is a rule stating it is impossible for
 % f to have more than one value at a time T.

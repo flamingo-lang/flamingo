@@ -20,16 +20,21 @@ At the same time, ALM is carefully limited in its expressiveness compared to oth
 logic programming systems, always favoring simplicity and maintainability over
 terseness and higher-orderedness.
 
+Flamingo's semantics as a state machine language make it amenable to automatic
+verification: describe both your positive and negative constraints in the same
+expressive language, and Flamingo will automatically verify they hold on every 
+possible sequence of inputs[[3](#3)]. It's like Alloy or TLA+, but easy.
+
 Incidentally, these same limits allow Flamingo's
 runtime to take advantage of decades of optimization research in the fields of
 Datalog and ASP. Combined with Flamingos' automatic verification, these
 characteristics make Flamingo ideal for the rapid design and implementation of
-complex, practical systems.
+complex, practical systems. 
 
 In terms of language theory, ALM is a _logic programming language_, specifically
 an extension of [Datalog](https://en.wikipedia.org/wiki/Datalog) that adds an explicit
 notion of action and change, negative constraints, and a powerful, object-oriented module
-system[[3](#3)].
+system[[4](#4)].
 
 ## Installing the Compiler
 
@@ -82,7 +87,13 @@ actions and change beginning with John McCarthy's
 [<a name="2">2</a>]: The Flamingo-to-JS is a work in progress. For now, Flamingo is translated
 into ASP and interpreted by the [Clingo solver](https://github.com/domoritz/clingo-wasm).
 
-[<a name="3">3</a>]: Flamingo is a mostly-faithful Javascript implementation of the
+[<a name="3">3</a>]: This is currently a bit hand-wavy in that we only check a fixed number of
+objects up to a fixed horizon of actions. In the short term, this will be configurable. In the 
+long term, a major focus of my grad research is figuring out a way to verify infinite domains
+via induction and SMT. If this is possible, Flamingo will be the easiest proof language in existence
+by a long shot.
+
+[<a name="4">4</a>]: Flamingo is a mostly-faithful Javascript implementation of the
 [Modular Action Language ALM](https://arxiv.org/abs/1505.05022), a specification language
 with a rich history beginning with John McCarthy's
 [situation calculus](https://en.wikipedia.org/wiki/Situation_calculus).
