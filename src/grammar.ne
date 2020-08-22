@@ -5,15 +5,8 @@ comma_seperated[X] -> $X _ ("," _ $X):*
 
 # Terms
 boolean -> "true" | "false"
-non_zero_digit -> [1-9]
-digit -> [0-9]
-
-lowercase_letter -> [a-z]
-uppercase_letter -> [A-Z]
-letter -> [A-Za-z]
 identifier -> [a-z]:+ [A-Za-z0-9]:*
 variable -> [A-Z]:+ [A-Za-z0-9]:*
-positive_integer -> non_zero_digit:+
 integer -> "0" | positive_integer | "-" positive_integer
 arithmetic_op -> "+" | "-" | "-" | "*" | "/" | "mod"
 comparison_rel -> ">" | ">=" | "<" | "<="
@@ -23,7 +16,6 @@ neq -> "!="
 basic_arithmetic_term -> variable | identifier | integer
 basic_term -> basic_arithmetic_term | boolean
 function_term -> identifier function_args
-function_args -> "(" comma_seperated[term] ")"
 arithmetic_term -> basic_arithmetic_term _ arithmetic_op basic_arithmetic_term
 term -> basic_term | arithmetic_term
 positive_function_literal -> function_term | function_term eq term
