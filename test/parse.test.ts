@@ -170,6 +170,7 @@ describe("Parsing", () => {
             a, b :: c, d, e
                 attributes
                     f : booleans
+            x :: 1..10
         `);
         const a = results.value[0];
         expect(a.first[0].value).to.equal("foo");
@@ -182,6 +183,10 @@ describe("Parsing", () => {
         expect(b.attributes[0].value.ident.value).to.equal("f")
         expect(b.attributes[0].value.args).to.be.null;
         expect(b.attributes[0].value.ret.value).to.equal("booleans")
+
+        const c = results.value[2];
+        expect(c.first.map(({ value }: any) => value)).to.deep.equal(["x"]);
+        expect(c.second).to.deep.equal([[1, 10]]);
     });
 
     it("Statics", () => {

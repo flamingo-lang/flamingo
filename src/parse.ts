@@ -23,6 +23,54 @@ export const Nodes = {
     Neq: "!=",
 };
 
+type Boolean = P.Node<"Boolean", boolean>;
+type Identifier = P.Node<"Identifier", string>;
+type Variable = P.Node<"Variable", string>;
+type BasicArithmeticTerm = Variable | Identifier | number;
+type BasicTerm = P.Node<"Variable", BasicArithmeticTerm | Boolean>;
+type ArithmeticOp = "+" | "-" | "*" | "/" | "mod";
+type ArithmeticTerm = P.Node<"ArithmeticTerm", [BasicArithmeticTerm, ArithmeticOp, BasicArithmeticTerm]>;
+type ComparisonRel = ">" | ">=" | "<" | "<=";
+type ArithmeticRel = ComparisonRel | "=" | "!=";
+type Term = ArithmeticTerm | BasicTerm;
+type FunctionTerm = P.Node<"FunctionTerm", {negated: boolean, fn: Identifier, args: Term[]}>
+type FunctionAssignment = P.Node<"FunctionAssignment", {
+    fnTerm: FunctionTerm | Identifier,
+    operator: "=" | "!=",
+    ret: Term
+}>;
+type FunctionLiteral = FunctionAssignment | FunctionTerm | Identifier;
+type ArithmeticExpression = P.Node<"ArithmeticExpression", [Term, ArithmeticRel, Term]>
+type Literal = FunctionLiteral | ArithmeticExpression;
+type VarORId = Variable | Identifier;
+type Body = Literal[];
+type Occurs = VarORId;
+type CausalLaw = P.Node<"CausalLaw", {occurs: Occurs, head: FunctionLiteral, body: Body}>
+type SCHead = "false" | FunctionLiteral;
+type StateConstraint = P.Node<"StateConstraint", { head: SCHead, body: Body }>;
+type ExecutabilityCondition = P.Node<"ExecutabilityCondition", { occurs: Occurs, body: Body }>;
+type SortDecl = { first: Identifier, second: SortName, attributes: Attributes };
+type Sorts = P.Node<"Sorts", SortDecl[]>;
+type SortName = Identifier | [number, number];
+type Attributes = FunctionDecl[];
+type Arguments = Identifier[];
+type Statics = P.Node<"Statics", FunctionDecl[]>
+type Fluents = { basic: BasicFluents | null, defined: DefinedFluents | null };
+type BasicFluents = P.Node<"BasicFluents", FunctionDecl[]>;
+type DefinedFluents = P.Node<"DefinedFluents", FunctionDecl[]>;
+type FunctionDecl = P.Node<"FunctionDecl", {ident: Identifier, args: Arguments | null, ret: Identifier}>
+type Axioms = Axiom[];
+type Fact = P.Node<"Fact", FunctionLiteral>;
+type Axiom = CausalLaw | StateConstraint | ExecutabilityCondition | Fact;
+type Initially = Fact[];
+type ModuleAST = {
+    sorts: Sorts,
+    statics: Statics,
+    fluents: Fluents,
+    axioms: Axioms;
+    initially: Initially;
+};
+
 const jump = (a: P.Parser<any>, b: P.Parser<any>) =>
     P.seq(a, b).map(x => x[1]);
 
@@ -134,6 +182,7 @@ export const ALM = P.createLanguage({
         commaSeparated(r.SortName),
         r.Attributes.fallback(null)
     ).map(([first, second, attributes]) => ({ first, second, attributes })),
+    SortName: r => P.alt(r.Identifier, P.seq(r.Integer.skip(P.string("..")), r.Integer)),
     Attributes: r => section(
         "attributes",
         r.FunctionDecl.wrap(P.optWhitespace, P.optWhitespace).atLeast(1)
@@ -142,7 +191,6 @@ export const ALM = P.createLanguage({
         .skip(P.optWhitespace)
         .skip(P.string("->"))
         .skip(P.optWhitespace),
-    SortName: r => P.alt(r.Identifier, P.seq(r.Integer, P.string(".."), r.Integer)),
     Statics: r => section("statics", r.FunctionDecl.many()).node(Nodes.Statics),
     Fluents: r => section("fluents", P.seq(r.BasicFluents.fallback(null), r.DefinedFluents.fallback(null)))
         .map(([basic, defined]) => ({ basic, defined })),
@@ -179,3 +227,7 @@ export const ALM = P.createLanguage({
             sorts, statics, fluents, axioms, initially
         })),
 });
+
+export function parseModule(mod: string): ModuleAST {
+    return ALM.Module.tryParse(mod);
+}

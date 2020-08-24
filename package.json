@@ -5,7 +5,7 @@
   "author": "Daniel Hines <d4hines@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "test": "ts-mocha ./test/**/*.spec.ts"
+    "test": "ts-mocha ./test/**/*.test.ts"
   },
   "devDependencies": {
     "@types/chai": "^4.2.12",
