@@ -23,47 +23,47 @@ export const Nodes = {
     Neq: "!=",
 };
 
-type Boolean = P.Node<"Boolean", boolean>;
-type Identifier = P.Node<"Identifier", string>;
-type Variable = P.Node<"Variable", string>;
-type BasicArithmeticTerm = Variable | Identifier | number;
-type BasicTerm = P.Node<"Variable", BasicArithmeticTerm | Boolean>;
-type ArithmeticOp = "+" | "-" | "*" | "/" | "mod";
-type ArithmeticTerm = P.Node<"ArithmeticTerm", [BasicArithmeticTerm, ArithmeticOp, BasicArithmeticTerm]>;
-type ComparisonRel = ">" | ">=" | "<" | "<=";
-type ArithmeticRel = ComparisonRel | "=" | "!=";
-type Term = ArithmeticTerm | BasicTerm;
-type FunctionTerm = P.Node<"FunctionTerm", {negated: boolean, fn: Identifier, args: Term[]}>
-type FunctionAssignment = P.Node<"FunctionAssignment", {
+export type Boolean = P.Node<"Boolean", boolean>;
+export type Identifier = P.Node<"Identifier", string>;
+export type Variable = P.Node<"Variable", string>;
+export type BasicArithmeticTerm = Variable | Identifier | number;
+export type BasicTerm = P.Node<"Variable", BasicArithmeticTerm | Boolean>;
+export type ArithmeticOp = "+" | "-" | "*" | "/" | "mod";
+export type ArithmeticTerm = P.Node<"ArithmeticTerm", [BasicArithmeticTerm, ArithmeticOp, BasicArithmeticTerm]>;
+export type ComparisonRel = ">" | ">=" | "<" | "<=";
+export type ArithmeticRel = ComparisonRel | "=" | "!=";
+export type Term = ArithmeticTerm | BasicTerm;
+export type FunctionTerm = P.Node<"FunctionTerm", {negated: boolean, fn: Identifier, args: Term[]}>
+export type FunctionAssignment = P.Node<"FunctionAssignment", {
     fnTerm: FunctionTerm | Identifier,
     operator: "=" | "!=",
     ret: Term
 }>;
-type FunctionLiteral = FunctionAssignment | FunctionTerm | Identifier;
-type ArithmeticExpression = P.Node<"ArithmeticExpression", [Term, ArithmeticRel, Term]>
-type Literal = FunctionLiteral | ArithmeticExpression;
-type VarORId = Variable | Identifier;
-type Body = Literal[];
-type Occurs = VarORId;
-type CausalLaw = P.Node<"CausalLaw", {occurs: Occurs, head: FunctionLiteral, body: Body}>
-type SCHead = "false" | FunctionLiteral;
-type StateConstraint = P.Node<"StateConstraint", { head: SCHead, body: Body }>;
-type ExecutabilityCondition = P.Node<"ExecutabilityCondition", { occurs: Occurs, body: Body }>;
-type SortDecl = { first: Identifier, second: SortName, attributes: Attributes };
-type Sorts = P.Node<"Sorts", SortDecl[]>;
-type SortName = Identifier | [number, number];
-type Attributes = FunctionDecl[];
-type Arguments = Identifier[];
-type Statics = P.Node<"Statics", FunctionDecl[]>
-type Fluents = { basic: BasicFluents | null, defined: DefinedFluents | null };
-type BasicFluents = P.Node<"BasicFluents", FunctionDecl[]>;
-type DefinedFluents = P.Node<"DefinedFluents", FunctionDecl[]>;
-type FunctionDecl = P.Node<"FunctionDecl", {ident: Identifier, args: Arguments | null, ret: Identifier}>
-type Axioms = Axiom[];
-type Fact = P.Node<"Fact", FunctionLiteral>;
-type Axiom = CausalLaw | StateConstraint | ExecutabilityCondition | Fact;
-type Initially = Fact[];
-type ModuleAST = {
+export type FunctionLiteral = FunctionAssignment | FunctionTerm | Identifier;
+export type ArithmeticExpression = P.Node<"ArithmeticExpression", [Term, ArithmeticRel, Term]>
+export type Literal = FunctionLiteral | ArithmeticExpression;
+export type VarORId = Variable | Identifier;
+export type Body = Literal[];
+export type Occurs = VarORId;
+export type CausalLaw = P.Node<"CausalLaw", {occurs: Occurs, head: FunctionLiteral, body: Body}>
+export type SCHead = "false" | FunctionLiteral;
+export type StateConstraint = P.Node<"StateConstraint", { head: SCHead, body: Body }>;
+export type ExecutabilityCondition = P.Node<"ExecutabilityCondition", { occurs: Occurs, body: Body }>;
+export type SortDecl = { first: Identifier[], second: SortName[], attributes: Attributes | null };
+export type Sorts = P.Node<"Sorts", SortDecl[]>;
+export type SortName = Identifier | [number, number] | Set<Identifier>;
+export type Attributes = FunctionDecl[];
+export type Arguments = Identifier[];
+export type Statics = P.Node<"Statics", FunctionDecl[]>
+export type Fluents = { basic: BasicFluents | null, defined: DefinedFluents | null };
+export type BasicFluents = P.Node<"BasicFluents", FunctionDecl[]>;
+export type DefinedFluents = P.Node<"DefinedFluents", FunctionDecl[]>;
+export type FunctionDecl = P.Node<"FunctionDecl", {ident: Identifier, args: Arguments | null, ret: Identifier}>
+export type Axioms = Axiom[];
+export type Fact = P.Node<"Fact", FunctionLiteral>;
+export type Axiom = CausalLaw | StateConstraint | ExecutabilityCondition | Fact;
+export type Initially = Fact[];
+export type ModuleAST = {
     sorts: Sorts,
     statics: Statics,
     fluents: Fluents,
@@ -96,8 +96,8 @@ export const ALM = P.createLanguage({
         .map(Boolean)
         .node(Nodes.Boolean),
     Integer: () => P.regexp(/(\-)?[0-9]+/).map(x => Number(x)).desc("an integer"),
-    Identifier: () => P.regexp(/[a-z]+[A-Za-z0-9]*/).desc("an identifier").node(Nodes.Identifier),
-    Variable: () => P.regexp(/[A-Z]+[A-Za-z0-9]*/).desc("a variable").node("Variable"),
+    Identifier: () => P.regexp(/[a-z]+[A-Za-z0-9_]*'?/).desc("an identifier").node(Nodes.Identifier),
+    Variable: () => P.regexp(/[A-Z]+[A-Za-z0-9_]*'?/).desc("a variable").node("Variable"),
     ArithmeticOp: () => P.regexp(/\+|\-|\*|\/|mod/).desc("an arithmetic operator (+, -, *, /, or mod)"),
     ComparisonRel: () => P.regexp(/>|>=|<|<=/),
     Eq: () => P.string("="),
@@ -182,7 +182,13 @@ export const ALM = P.createLanguage({
         commaSeparated(r.SortName),
         r.Attributes.fallback(null)
     ).map(([first, second, attributes]) => ({ first, second, attributes })),
-    SortName: r => P.alt(r.Identifier, P.seq(r.Integer.skip(P.string("..")), r.Integer)),
+    Set: r => commaSeparated(r.Identifier).wrap(P.string("{"), P.string("}"))
+        .map(x => new Set(x)),
+    SortName: r => P.alt(
+        r.Identifier,
+        P.seq(r.Integer.skip(P.string("..")), r.Integer),
+        r.Set,
+    ),
     Attributes: r => section(
         "attributes",
         r.FunctionDecl.wrap(P.optWhitespace, P.optWhitespace).atLeast(1)
@@ -223,8 +229,8 @@ export const ALM = P.createLanguage({
             r.Initially.fallback(null),
         ),
     Module: r => section("module", sepByWhiteSpace(r.Identifier, r.ModuleBody))
-        .map(([sorts, statics, fluents, axioms, initially]) => ({
-            sorts, statics, fluents, axioms, initially
+        .map(([moduleName, [sorts, statics, fluents, axioms, initially]]) => ({
+            moduleName, sorts, statics, fluents, axioms, initially
         })),
 });
 

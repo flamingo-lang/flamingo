@@ -1,5 +1,5 @@
-import { ALM, Nodes } from "../src/parse";
 import { expect } from "chai";
+import { ALM, Nodes } from "../src/parse";
 
 describe("Parsing", () => {
     it("Identifier", () => {
@@ -171,6 +171,7 @@ describe("Parsing", () => {
                 attributes
                     f : booleans
             x :: 1..10
+            y, z :: {m, n, o}
         `);
         const a = results.value[0];
         expect(a.first[0].value).to.equal("foo");
@@ -187,6 +188,10 @@ describe("Parsing", () => {
         const c = results.value[2];
         expect(c.first.map(({ value }: any) => value)).to.deep.equal(["x"]);
         expect(c.second).to.deep.equal([[1, 10]]);
+
+        const d = results.value[3];
+        expect(d.first.map(({ value }: any) => value)).to.deep.equal(["y", "z"]);
+        expect(Array.from(d.second[0]).map((x: any) => x.value)).to.deep.equal(["m", "n", "o"]);
     });
 
     it("Statics", () => {
@@ -283,7 +288,7 @@ describe("Parsing", () => {
         `);
 
         expect(result).to.have.keys([
-            "sorts", "statics", "fluents", "axioms", "initially"
+            "moduleName", "sorts", "statics", "fluents", "axioms", "initially"
         ]);
     });
 });
