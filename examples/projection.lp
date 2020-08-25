@@ -9,26 +9,23 @@ dom(s, [n..n']).
 
 % For every attribute of s a : s1 x s2 ... sn -> s'
 is_attr(a).
-attr(a(S0, S1,%*...,*%SN)) :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN).
+attr(a(S0, S1,%*...,*%SN), S') :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN), dom(s', S').
 param(a, 0, s). param(a, 1, s1). %* ...,*% param(a, n, sn).
-ret(a, s').
 
 % For every static st : s0 x s1 ... sn -> s'
 is_static(st).
+static(st(S0, S1, S2,%*...,*%SN), S') :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN), dom(s', S').
 param(st, 0, s0). %* ...,*% param(s, n, sn).
-ret(st, s').
 
 % For every basic fluent b : s0 x s1 ... sn -> s'
 is_basic_fluent(b).
-fluent(basic, b(S0, S1, S2,%*...,*%SN, S')) :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN), dom(s', S').
+fluent(basic, b(S0, S1, S2,%*...,*%SN) S') :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN), dom(s', S').
 param(b, 0, s0). param(b, 1, s1). param(b, 2, s2). %* ...,*% param(b, n, sn).
-ret(b, s').
 
 % For every defined fluent d : s0 x s1 ... sn -> s'
 is_defined_fluent(d).
-fluent(defined,d(S0, S1, S2,%*...,*%SN)) :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN).
+fluent(defined,d(S0, S1, S2,%*...,*%SN), S') :- dom(s0, S0), dom(s1, S1), %*...,*% dom(sn, SN), dom(s', S').
 param(d, 0, s0). param(d, 1, s1). param(d, 2, s2). %* ...,*% param(d, n, sn).
-ret(d, s').
 
 % For every state constraint with lable sc and variables X1..XN
 state_constraint(sc(X1, %*..,*%XN)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
