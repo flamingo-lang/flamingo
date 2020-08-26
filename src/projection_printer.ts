@@ -1,4 +1,4 @@
-import { ModuleAST, Sorts, Statics } from "./parse";
+import { ModuleAST, Sorts, Statics, Fluents, FunctionDecl } from "./parse";
 import { unpad } from "./unpad";
 
 
@@ -10,19 +10,18 @@ export function printSortNames(sorts: Sorts) {
                 if (Array.isArray(secondSortName)) {
                     // Range case
                     return unpad(`
-                        subsort(${firstSortName}, range(${secondSortName[0], secondSortName[1]})).
+                        holds(static(link(${firstSortName}), integers)).
                         dom(${firstSortName}, ${secondSortName[0]}..${secondSortName[1]}).
                         `);
                 } else if ("name" in secondSortName) {
                     // Identifier Case
                     return unpad(`
-                        subsort(${firstSortName}, ident(${secondSortName.value})).
+                        holds(static(link(${firstSortName}), ${secondSortName.value})).
                         `);
                 } else {
                     // Set literal case
                     const arr = Array.from(secondSortName).map(({ value }) => value);
                     return unpad(`
-                        subsort(${firstSortName}, set((${arr.join(",")}))).
                         dom(${firstSortName},(${arr.join(";")})).
                         `);
                 }
@@ -39,49 +38,60 @@ export function printAttributes({ value: sorts }: Sorts) {
                         .map((ident, i) => [ident, `S${i}`]);
                     const vars = sort_var_combos.map(([_, x]) => x);
                     const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
-                    const params = sort_var_combos.map(([s, _], i) => `param(${ident}, ${i}, ${s}).`).join(" ");
                     return unpad(`
-                    is_attr(${ident}).
-                    attr(${ident}(${vars.join(",")}, S')) :- ${doms}, dom(${ret.value}, S').
-                    ${params}
-                    ret(${ident}, ${ret.value}).
+                    attr(${ident}(${vars.join(",")}), S') :- ${doms}, dom(${ret.value}, S').
                     `);
                 } else {
                     return unpad(`
-                    is_attr(${ident}).
-                    attr(${ident}(X, S')) :- dom(${firstSortName}, X), dom(${ret.value}, S').
-                    param(${ident}, 0, ${firstSortName}).
-                    ret(${ident}, ${ret.value}).
-                    `);
+                        attr(${ident}(X), S') :- dom(${firstSortName}, X), dom(${ret.value}, S').
+                        `);
                 }
             })
         ),
     ).flat(Infinity).join("\n");
 }
 
-export function printStatics({ value: sorts }: Statics) {
-    return sorts.map(({ value: { ident, args, ret } }) => {
+export function printStatics({ value: statics }: Statics) {
+    return statics.map(({ value: { ident: { value: ident }, args, ret } }) => {
         if (args) {
             const sort_var_combos = args.map(x => x.value)
                 .map((ident, i) => [ident, `S${i}`]);
             const vars = sort_var_combos.map(([_, x]) => x);
             const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
-            const params = sort_var_combos.map(([s, _], i) => `param(${ident}, ${i}, ${s}).`).join(" ");
             return unpad(`
-                is_attr(${ident}).
-                attr(${ident}(${vars.join(",")})) :- ${doms}.
-                ${params}
-                ret(${ident}, ${ret.value}).
+                static(${ident}(${vars.join(", ")}), S') :- ${doms}, dom(${ret.value}, S').
                 `);
         } else {
             return unpad(`
-                is_attr(${ident}).
-                attr(${ident}).
-                ret(${ident}, ${ret.value}).
+                static(${ident}, S') :- dom(${ret.value}, S').
                 `);
         }
     }).flat(Infinity).join("\n");
 }
+
+export function printFluents({ basic, defined }: Fluents) {
+    const fluentPrinter = (basicOrDefined: string) =>
+        ({ value: { ident: { value: ident }, args, ret } }: FunctionDecl) => {
+            if (args) {
+                const sort_var_combos = args.map(x => x.value)
+                    .map((ident, i) => [ident, `S${i}`]);
+                const vars = sort_var_combos.map(([_, x]) => x);
+                const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
+                return unpad(`
+                    fluent(${basicOrDefined}, ${ident}(${vars.join(", ")}), S') :- ${doms}, dom(${ret.value}, S').
+                    `);
+            } else {
+                return unpad(`
+                    fluent(${basicOrDefined}, ${ident}, S') :- dom(${ret.value}, S').
+                    `);
+            }
+        };
+    return [
+        basic?.value.map(fluentPrinter("basic")) ?? [],
+        defined?.value.map(fluentPrinter("defined")) ?? [],
+    ].flat(Infinity).join("\n");
+}
+
 // export function printProjection(mod: ModuleAST) {
 
 //     attributes === null ? "" : (...attributes!.map(attr => ""))

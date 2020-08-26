@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ALM, Nodes } from "../src/parse";
+import { ALM, Nodes, FunctionLiteral } from "../src/parse";
 
 describe("Parsing", () => {
     it("Identifier", () => {
@@ -49,11 +49,45 @@ describe("Parsing", () => {
     });
 
     it("FunctionLiteral", () => {
-        const result1 = ALM.FunctionLiteral.tryParse("f(A) = g");
-        expect(result1.name).to.equal(Nodes.FunctionAssignment);
+        const result1: FunctionLiteral = ALM.FunctionLiteral.tryParse("f(A) = g");
+        expect(result1.name).to.equal(Nodes.FunctionLiteral);
+        expect(result1.value.fn).to.equal("f");
+        expect(result1.value.args.map(x => (x.value as any).value)).to.deep.equal(["A"]);
+        expect((result1.value.ret as any).value.value).to.deep.equal("g");
+        expect(result1.value.negated).to.be.false;
+        expect((result1.value.node as any).name).to.equal(Nodes.FunctionAssignment);
 
-        const result2 = ALM.FunctionLiteral.tryParse("f(A)");
-        expect(result2.name).to.equal(Nodes.FunctionTerm);
+        const result2: FunctionLiteral = ALM.FunctionLiteral.tryParse("f(A)");
+        expect(result2.name).to.equal(Nodes.FunctionLiteral);
+        expect(result2.value.fn).to.equal("f");
+        expect(result2.value.args.map(x => (x.value as any).value)).to.deep.equal(["A"]);
+        expect((result2.value.ret as any)).to.be.true;
+        expect(result2.value.negated).to.be.false;
+        expect((result2.value.node as any).name).to.equal(Nodes.FunctionTerm);
+
+        const result3: FunctionLiteral = ALM.FunctionLiteral.tryParse("-f(A)");
+        expect(result3.name).to.equal(Nodes.FunctionLiteral);
+        expect(result3.value.fn).to.equal("f");
+        expect(result3.value.args.map(x => (x.value as any).value)).to.deep.equal(["A"]);
+        expect((result3.value.ret as any)).to.be.true;
+        expect(result3.value.negated).to.be.true;
+        expect((result3.value.node as any).name).to.equal(Nodes.FunctionTerm);
+
+        const result4: FunctionLiteral = ALM.FunctionLiteral.tryParse("f");
+        expect(result4.name).to.equal(Nodes.FunctionLiteral);
+        expect(result4.value.fn).to.equal("f");
+        expect(result4.value.args).to.deep.equal([]);
+        expect((result4.value.ret as any)).to.be.true;
+        expect(result4.value.negated).to.be.false;
+        expect((result4.value.node as any).name).to.equal(Nodes.Identifier);
+
+        const result5: FunctionLiteral = ALM.FunctionLiteral.tryParse("-f");
+        expect(result5.name).to.equal(Nodes.FunctionLiteral);
+        expect(result5.value.fn).to.equal("f");
+        expect(result5.value.args).to.deep.equal([]);
+        expect((result5.value.ret as any)).to.be.true;
+        expect(result5.value.negated).to.be.true;
+        expect((result5.value.node as any).name).to.equal(Nodes.Identifier);
     });
 
     it("ArithmeticExpression", () => {
@@ -78,10 +112,10 @@ describe("Parsing", () => {
         `);
 
         expect(results.value.occurs.name).to.equal(Nodes.Variable);
-        expect(results.value.head.name).to.equal(Nodes.FunctionAssignment);
+        expect(results.value.head.name).to.equal(Nodes.FunctionLiteral);
         expect(results.value.body.map((x: any) => x.name)).to.deep.equal([
-            Nodes.FunctionAssignment,
-            Nodes.FunctionTerm,
+            Nodes.FunctionLiteral,
+            Nodes.FunctionLiteral,
             Nodes.ArithmeticExpression,
             Nodes.ArithmeticExpression
         ]);
@@ -103,10 +137,10 @@ describe("Parsing", () => {
             Y + 3 = Z,
             X = Z.
         `);
-        expect(results.value.head.name).to.equal(Nodes.FunctionAssignment);
+        expect(results.value.head.name).to.equal(Nodes.FunctionLiteral);
         expect(results.value.body.map((x: any) => x.name)).to.deep.equal([
-            Nodes.FunctionAssignment,
-            Nodes.FunctionTerm,
+            Nodes.FunctionLiteral,
+            Nodes.FunctionLiteral,
             Nodes.ArithmeticExpression,
             Nodes.ArithmeticExpression
         ]);
@@ -123,8 +157,8 @@ describe("Parsing", () => {
 
         expect(results.value.occurs.name).to.equal(Nodes.Variable);
         expect(results.value.body.map((x: any) => x.name)).to.deep.equal([
-            Nodes.FunctionAssignment,
-            Nodes.FunctionTerm,
+            Nodes.FunctionLiteral,
+            Nodes.FunctionLiteral,
             Nodes.ArithmeticExpression,
             Nodes.ArithmeticExpression
         ]);
@@ -156,8 +190,8 @@ describe("Parsing", () => {
         X = Z.
         `);
         expect(results.map((x: any) => x.name)).to.deep.equal([
-            Nodes.FunctionAssignment,
-            Nodes.FunctionTerm,
+            Nodes.FunctionLiteral,
+            Nodes.FunctionLiteral,
             Nodes.ArithmeticExpression,
             Nodes.ArithmeticExpression
         ]);

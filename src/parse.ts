@@ -8,6 +8,8 @@ export const Nodes = {
     ArithmeticTerm: "ArithmeticTerm",
     Term: "Term",
     FunctionTerm: "FunctionTerm",
+    FunctionLiteral: "FunctionLiteral",
+    _FunctionLiteralInput: "FunctionLiteralInput",
     Statics: "Statics",
     DefinedFluents: "DefinedFluents",
     BasicFluents: "BasicFluents",
@@ -21,7 +23,7 @@ export const Nodes = {
     Fact: "Fact",
     Eq: "=",
     Neq: "!=",
-};
+} as const;
 
 export type Boolean = P.Node<"Boolean", boolean>;
 export type Identifier = P.Node<"Identifier", string>;
@@ -33,19 +35,27 @@ export type ArithmeticTerm = P.Node<"ArithmeticTerm", [BasicArithmeticTerm, Arit
 export type ComparisonRel = ">" | ">=" | "<" | "<=";
 export type ArithmeticRel = ComparisonRel | "=" | "!=";
 export type Term = ArithmeticTerm | BasicTerm;
-export type FunctionTerm = P.Node<"FunctionTerm", {negated: boolean, fn: Identifier, args: Term[]}>
+export type FunctionTerm = P.Node<"FunctionTerm", { negated: boolean, fn: Identifier, args: Term[] }>
 export type FunctionAssignment = P.Node<"FunctionAssignment", {
     fnTerm: FunctionTerm | Identifier,
     operator: "=" | "!=",
     ret: Term
 }>;
-export type FunctionLiteral = FunctionAssignment | FunctionTerm | Identifier;
+/** Only used internally for type safety. */
+type FunctionLiteralInput = P.Node<"FunctionLiteral", FunctionAssignment | FunctionTerm | [("-" | null), Identifier]>
+export type FunctionLiteral = P.Node<"FunctionLiteral", {
+    fn: string,
+    args: Term[],
+    ret: Term | true,
+    negated: boolean,
+    node: FunctionAssignment | FunctionTerm | Identifier,
+}>;
 export type ArithmeticExpression = P.Node<"ArithmeticExpression", [Term, ArithmeticRel, Term]>
 export type Literal = FunctionLiteral | ArithmeticExpression;
 export type VarORId = Variable | Identifier;
 export type Body = Literal[];
 export type Occurs = VarORId;
-export type CausalLaw = P.Node<"CausalLaw", {occurs: Occurs, head: FunctionLiteral, body: Body}>
+export type CausalLaw = P.Node<"CausalLaw", { occurs: Occurs, head: FunctionLiteral, body: Body }>
 export type SCHead = "false" | FunctionLiteral;
 export type StateConstraint = P.Node<"StateConstraint", { head: SCHead, body: Body }>;
 export type ExecutabilityCondition = P.Node<"ExecutabilityCondition", { occurs: Occurs, body: Body }>;
@@ -58,7 +68,7 @@ export type Statics = P.Node<"Statics", FunctionDecl[]>
 export type Fluents = { basic: BasicFluents | null, defined: DefinedFluents | null };
 export type BasicFluents = P.Node<"BasicFluents", FunctionDecl[]>;
 export type DefinedFluents = P.Node<"DefinedFluents", FunctionDecl[]>;
-export type FunctionDecl = P.Node<"FunctionDecl", {ident: Identifier, args: Arguments | null, ret: Identifier}>
+export type FunctionDecl = P.Node<"FunctionDecl", { ident: Identifier, args: Arguments | null, ret: Identifier }>
 export type Axioms = Axiom[];
 export type Fact = P.Node<"Fact", FunctionLiteral>;
 export type Axiom = CausalLaw | StateConstraint | ExecutabilityCondition | Fact;
@@ -132,7 +142,67 @@ export const ALM = P.createLanguage({
             value: { fnTerm, operator, ret },
             ...node
         })),
-    FunctionLiteral: r => P.alt(r.FunctionAssignment, r.FunctionTerm, r.Identifier),
+    FunctionLiteral: r => P.alt(
+        r.FunctionAssignment,
+        r.FunctionTerm,
+        P.seq(r.Negation, r.Identifier))
+        .node(Nodes._FunctionLiteralInput)
+        .map((_n): FunctionLiteral => {
+            const n = _n as unknown as FunctionLiteralInput;
+            switch (true) {
+                case "name" in n.value && n.value.name === Nodes.FunctionAssignment: {
+                    const { value: { fnTerm, ret, operator } } = n.value as FunctionAssignment;
+                    if (fnTerm.name === "FunctionTerm") {
+                        const { args, fn, negated } = fnTerm.value;
+                        // Some day we should throw an error forbidding a term to be negated
+                        // in two places. 
+                        const neg = negated || operator === "!=";
+                        return {
+                            ...n,
+                            name: Nodes.FunctionLiteral,
+                            value: {
+                                negated: neg,
+                                fn: fn.value,
+                                args,
+                                ret,
+                                node: n.value as FunctionAssignment
+                            }
+                        };
+                    } else {
+                        return {
+                            ...n,
+                            name: Nodes.FunctionLiteral,
+                            value: {
+                                negated: operator === "!=",
+                                fn: fnTerm.value,
+                                args: [],
+                                ret,
+                                node: n.value as FunctionAssignment
+                            }
+                        };
+                    }
+                }
+                case "name" in n.value && n.value.name === Nodes.FunctionTerm: {
+                    const { value: { fn: { value: fn }, args, negated } } = n.value as FunctionTerm;
+                    return {
+                        ...n,
+                        name: Nodes.FunctionLiteral,
+                        value: { negated, fn, args: args, ret: true, node: n.value as FunctionTerm }
+                    };
+                }
+                case Array.isArray(n.value): {
+                    const [negated, ident] = n.value as ["=" | null, Identifier];
+                    return {
+                        ...n,
+                        name: Nodes.FunctionLiteral,
+                        value: { negated: !!negated, fn: ident.value, args: [], ret: true, node: ident }
+                    };
+                }
+
+                default:
+                    throw new Error("unreachable");
+            }
+        }),
     ArithmeticExpression: r => sepByWhiteSpace(r.Term, r.ArithmeticRel, r.Term)
         .node(Nodes.ArithmeticExpression),
     Literal: r => P.alt(
