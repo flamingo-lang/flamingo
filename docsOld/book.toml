@@ -1,9 +1,0 @@
-[book]
-authors = ["Daniel Hines"]
-language = "en"
-multilingual = false
-src = "src"
-title = "Flamingo Language Guide"
-
-[output.html]
-default-theme = "coal"
