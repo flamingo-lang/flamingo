@@ -39,11 +39,11 @@ export function printAttributes({ value: sorts }: Sorts) {
                     const vars = sort_var_combos.map(([_, x]) => x);
                     const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
                     return unpad(`
-                    attr(${ident}(${vars.join(",")}), S') :- ${doms}, dom(${ret.value}, S').
+                    attr(${ident}(${vars.join(",")}), Ret) :- ${doms}, dom(${ret.value}, Ret).
                     `);
                 } else {
                     return unpad(`
-                        attr(${ident}(X), S') :- dom(${firstSortName}, X), dom(${ret.value}, S').
+                        attr(${ident}(X), Ret) :- dom(${firstSortName}, X), dom(${ret.value}, Ret).
                         `);
                 }
             })
@@ -59,11 +59,11 @@ export function printStatics({ value: statics }: Statics) {
             const vars = sort_var_combos.map(([_, x]) => x);
             const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
             return unpad(`
-                static(${ident}(${vars.join(", ")}), S') :- ${doms}, dom(${ret.value}, S').
+                static(${ident}(${vars.join(", ")}), Ret) :- ${doms}, dom(${ret.value}, Ret).
                 `);
         } else {
             return unpad(`
-                static(${ident}, S') :- dom(${ret.value}, S').
+                static(${ident}, Ret) :- dom(${ret.value}, Ret).
                 `);
         }
     }).flat(Infinity).join("\n");
@@ -78,11 +78,11 @@ export function printFluents({ basic, defined }: Fluents) {
                 const vars = sort_var_combos.map(([_, x]) => x);
                 const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
                 return unpad(`
-                    fluent(${basicOrDefined}, ${ident}(${vars.join(", ")}), S') :- ${doms}, dom(${ret.value}, S').
+                    fluent(${basicOrDefined}, ${ident}(${vars.join(", ")}), Ret) :- ${doms}, dom(${ret.value}, Ret).
                     `);
             } else {
                 return unpad(`
-                    fluent(${basicOrDefined}, ${ident}, S') :- dom(${ret.value}, S').
+                    fluent(${basicOrDefined}, ${ident}, Ret) :- dom(${ret.value}, Ret).
                     `);
             }
         };
@@ -96,7 +96,7 @@ export function printFluents({ basic, defined }: Fluents) {
 
 //     attributes === null ? "" : (...attributes!.map(attr => ""))
 //     const rules = [
-//         "dom(S', X) :- subsort(S, S'), dom(S, X).",
+//         "dom(Ret, X) :- subsort(S, Ret), dom(S, X).",
 //         printSortNames(mod.sorts),
 
 //     ];

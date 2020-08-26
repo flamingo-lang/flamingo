@@ -45,10 +45,10 @@ describe("Printing Projection", () => {
         `);
 
         expect(printAttributes(mod.sorts).trim()).to.equal(unpad(`
-        attr(f(X), S') :- dom(foo, X), dom(g, S').
+        attr(f(X), Ret) :- dom(foo, X), dom(g, Ret).
 
 
-        attr(m(S0,S1,S2), S') :- dom(foo, S0), dom(n, S1), dom(p, S2), dom(o, S').
+        attr(m(S0,S1,S2), Ret) :- dom(foo, S0), dom(n, S1), dom(p, S2), dom(o, Ret).
         `).trim());
     });
 
@@ -61,10 +61,10 @@ describe("Printing Projection", () => {
         `);
 
         expect(printStatics(mod.statics).trim()).to.equal(unpad(`
-        static(a(S0, S1), S') :- dom(b, S0), dom(c, S1), dom(d, S').
+        static(a(S0, S1), Ret) :- dom(b, S0), dom(c, S1), dom(d, Ret).
 
 
-        static(f, S') :- dom(g, S').
+        static(f, Ret) :- dom(g, Ret).
         `).trim());
     });
 
@@ -82,16 +82,16 @@ describe("Printing Projection", () => {
 
         console.log(printFluents(mod.fluents));
         expect(printFluents(mod.fluents).trim()).to.equal(unpad(`
-        fluent(basic, a(S0, S1), S') :- dom(b, S0), dom(c, S1), dom(d, S').
+        fluent(basic, a(S0, S1), Ret) :- dom(b, S0), dom(c, S1), dom(d, Ret).
 
 
-        fluent(basic, f, S') :- dom(g, S').
+        fluent(basic, f, Ret) :- dom(g, Ret).
 
 
-        fluent(defined, y, S') :- dom(booleans, S').
+        fluent(defined, y, Ret) :- dom(booleans, Ret).
 
 
-        fluent(defined, q(S0, S1), S') :- dom(r, S0), dom(s, S1), dom(booleans, S').
+        fluent(defined, q(S0, S1), Ret) :- dom(r, S0), dom(s, S1), dom(booleans, Ret).
         `).trim());
     });
 });

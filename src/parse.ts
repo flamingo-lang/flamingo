@@ -106,8 +106,8 @@ export const ALM = P.createLanguage({
         .map(Boolean)
         .node(Nodes.Boolean),
     Integer: () => P.regexp(/(\-)?[0-9]+/).map(x => Number(x)).desc("an integer"),
-    Identifier: () => P.regexp(/[a-z]+[A-Za-z0-9_]*'?/).desc("an identifier").node(Nodes.Identifier),
-    Variable: () => P.regexp(/[A-Z]+[A-Za-z0-9_]*'?/).desc("a variable").node("Variable"),
+    Identifier: () => P.regexp(/[a-z]+[A-Za-z0-9_]*/).desc("an identifier").node(Nodes.Identifier),
+    Variable: () => P.regexp(/[A-Z]+[A-Za-z0-9_]*/).desc("a variable").node("Variable"),
     ArithmeticOp: () => P.regexp(/\+|\-|\*|\/|mod/).desc("an arithmetic operator (+, -, *, /, or mod)"),
     ComparisonRel: () => P.regexp(/>|>=|<|<=/),
     Eq: () => P.string("="),
