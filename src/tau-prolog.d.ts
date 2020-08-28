@@ -155,7 +155,7 @@ declare module 'tau-prolog' {
   
           public constructor(limit?: number);
   
-          public consult(program: string): void;
+          public consult(program: string): true | Term<1, 'error'>;
   
           public query(query: string): void;
   
