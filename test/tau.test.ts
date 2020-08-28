@@ -1,7 +1,7 @@
 import { create } from "tau-prolog";
 import { readFileSync } from "fs";
 
-describe.only("parsing", () => {
+describe("parsing", () => {
     it("Should work", () => {
         const logic = readFileSync("./test/prolog-projection.lp", { encoding: "utf-8" });
         const s = create();

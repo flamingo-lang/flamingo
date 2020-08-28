@@ -28,8 +28,7 @@ describe("Printing Projection", () => {
         dom(x, 1..10).
 
         sort(y).
-
-        dom(y,(a;b;c)).
+        dom(y, a). dom(y, b). dom(y, c).
         `).trim());
 
     });
@@ -80,7 +79,6 @@ describe("Printing Projection", () => {
                 q : r x s -> booleans
         `);
 
-        console.log(printFluents(mod.fluents));
         expect(printFluents(mod.fluents).trim()).to.equal(unpad(`
         fluent(basic, a(S0, S1), Ret) :- dom(b, S0), dom(c, S1), dom(d, Ret).
 
@@ -92,6 +90,23 @@ describe("Printing Projection", () => {
 
 
         fluent(defined, q(S0, S1), Ret) :- dom(r, S0), dom(s, S1), dom(booleans, Ret).
+        `).trim());
+    });
+
+    it("printStateConstraints", () => {
+        const mod = parseModule(`
+        module foo_bar
+        fluents
+            foo : a x b -> booleans
+            bar : a x b -> booleans
+            bam : a -> b
+        axioms
+            foo(X, Y) :- bar(X, Y).
+            bar(A, B) :- bam(A) = B.
+        `);
+
+        expect(printStateConstraints(mod.axioms).trim()).to.equal(unpad(`
+        state_constraint(axiom1(X, Y)) :- dom(s1, X1), dom(s2, X2), dom(sn, SN).
         `).trim());
     });
 });

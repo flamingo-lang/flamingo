@@ -20,10 +20,8 @@ export function printSortNames(sorts: Sorts) {
                         `);
                 } else {
                     // Set literal case
-                    const arr = Array.from(secondSortName).map(({ value }) => value);
-                    return unpad(`
-                        dom(${firstSortName},(${arr.join(";")})).
-                        `);
+                    return Array.from(secondSortName).map(({ value }) =>
+                        `dom(${firstSortName}, ${value}).`).join(" ");
                 }
             }),
         ])).flat(Infinity).join("\n");

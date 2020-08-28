@@ -76,6 +76,8 @@ body(r(X1, XN), eq(X1, X2)) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
 % X1 != X2
 body(r(X1, XN), neq(X1, X2)) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
 
+% For every static assignment f(x) = y.
+holds(static(x, y)).
 
 %%%%%%%%%%%%%%%%%%%%% Static Part of Encoding %%%%%%%%%%%%%%%%%%%%
 count(X, E, N) :- findall(X, E, L), length(L, N).
