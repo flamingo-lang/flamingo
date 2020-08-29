@@ -85,16 +85,15 @@ export type FunctionAssignment = P.Node<"FunctionAssignment", {
 type FunctionLiteralInput = P.Node<"FunctionLiteral", FunctionAssignment | FunctionTerm | [("-" | null), Identifier]>
 export type FunctionLiteral = P.Node<"FunctionLiteral", {
     fn: string,
-    args: Term[],
+    args?: Term[],
     ret: Term | true,
     negated: boolean,
     node: FunctionAssignment | FunctionTerm | Identifier,
 }>;
 export type ArithmeticExpression = P.Node<"ArithmeticExpression", [Term, ArithmeticRel, Term]>
 export type Literal = FunctionLiteral | ArithmeticExpression;
-export type VarORId = Variable | Identifier;
 export type Body = Literal[];
-export type Occurs = VarORId;
+export type Occurs = Variable;
 export type CausalLaw = P.Node<"CausalLaw", { occurs: Occurs, head: FunctionLiteral, body: Body }>
 export type SCHead = "false" | FunctionLiteral;
 export type StateConstraint = P.Node<"StateConstraint", { head: SCHead, body: Body }>;
@@ -114,11 +113,11 @@ export type Fact = P.Node<"Fact", FunctionLiteral>;
 export type Axiom = CausalLaw | StateConstraint | ExecutabilityCondition | Fact;
 export type Initially = Fact[];
 export type ModuleAST = {
-    sorts: Sorts,
-    statics: Statics,
-    fluents: Fluents,
-    axioms: Axioms;
-    initially: Initially;
+    sorts: Sorts | null ,
+    statics: Statics | null,
+    fluents: Fluents | null,
+    axioms: Axioms | null;
+    initially: Initially | null;
 };
 
 const jump = (a: P.Parser<any>, b: P.Parser<any>) =>
@@ -149,7 +148,7 @@ export const ALM = P.createLanguage({
     Identifier: () => P.regexp(/[a-z]+[A-Za-z0-9_]*/).desc("an identifier").node(Nodes.Identifier),
     Variable: () => P.regexp(/[A-Z]+[A-Za-z0-9_]*/).desc("a variable").node("Variable"),
     ArithmeticOp: () => P.regexp(/\+|\-|\*|\/|mod/).desc("an arithmetic operator (+, -, *, /, or mod)"),
-    ComparisonRel: () => P.regexp(/>|>=|<|<=/),
+    ComparisonRel: () => P.regexp(/>=|>|<=|</),
     Eq: () => P.string("="),
     Neq: () => P.string("!="),
     ArithmeticRel: r => P.alt(r.ComparisonRel, r.Eq, r.Neq),
@@ -249,9 +248,8 @@ export const ALM = P.createLanguage({
         r.FunctionLiteral,
         r.ArithmeticExpression,
     ),
-    VarOrID: r => P.alt(r.Variable, r.Identifier),
     Body: r => commaSeparated(r.Literal).skip(P.string(".")).skip(P.optWhitespace),
-    Occurs: r => r.VarOrID.wrap(
+    Occurs: r => r.Variable.wrap(
         P.optWhitespace.skip(P.string("occurs(")),
         P.optWhitespace.skip(P.string(")"))
     ).skip(P.optWhitespace),

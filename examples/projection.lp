@@ -29,17 +29,16 @@ fluent(defined, d(S0, S1, S2,%*...,*%SN), S') :- dom(s0, S0), dom(s1, S1), %*...
 %%%%%%% Axioms %%%%%%%
 % For every state constraint with lable sc and variables X1..XN
 state_constraint(sc(X1, %*..,*%XN)) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
-
-% For every dynamic causal law with lable d and variables X1..XN
-% where law begins with "occurs(X) causes ..."
-dlaw(d(X1, %*..,*%XN)) :- dom(s1, X1), dom(s2, X2).
-action(d(X1, %*..,*%XN), X) :- dom(s1, X1), dom(s2, X2).
-
 % For every state constraint with label sc of the form "f(X0) if ..."
 head(sc(X1, %*..,*%XN), pos(f(X0))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
 
 % For every state constraint with label sc of the form "-f(X0) if ..."
 head(sc(X1, %*..,*%XN), neg(f(X0))) :- dom(s1, X1), dom(s2, X2), %*...,*% dom(sn, SN).
+
+% For every dynamic causal law with lable d and variables X1..XN
+% where law begins with "occurs(X) causes ..."
+dlaw(d(X1, %*..,*%XN)) :- dom(s1, X1), dom(s2, X2).
+action(d(X1, %*..,*%XN), X) :- dom(s1, X1), dom(s2, X2).
 
 % For every dynamic causal law with label d of the form
 % occurs(X1) causes f(X2) if ...

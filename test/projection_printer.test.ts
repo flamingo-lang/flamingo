@@ -1,7 +1,8 @@
 import { expect } from "chai";
 import { unpad } from "../src/unpad";
-import { printAttributes, printSortNames, printStatics, printFluents, printStateConstraints } from "../src/projection_printer";
+import { printAttributes, printSortNames, printStatics, printFluents, printStateConstraints, printCausalLaws, printStaticAssignments, printInitially } from "../src/projection_printer";
 import { parseModule } from "../src/parse";
+import { collectFunctionSignatures } from "../src/collectFunctionSignatures";
 
 describe("Printing Projection", () => {
     it("printSortNames", () => {
@@ -14,7 +15,7 @@ describe("Printing Projection", () => {
 
         `);
 
-        expect(printSortNames(mod.sorts).trim()).to.equal(unpad(`
+        expect(printSortNames(mod.sorts!).trim()).to.equal(unpad(`
         sort(foo).
 
         holds(static(link(foo), bar)).
@@ -43,7 +44,7 @@ describe("Printing Projection", () => {
                     m : n x p -> o
         `);
 
-        expect(printAttributes(mod.sorts).trim()).to.equal(unpad(`
+        expect(printAttributes(mod.sorts!).trim()).to.equal(unpad(`
         attr(f(X), Ret) :- dom(foo, X), dom(g, Ret).
 
 
@@ -59,7 +60,7 @@ describe("Printing Projection", () => {
             f : g
         `);
 
-        expect(printStatics(mod.statics).trim()).to.equal(unpad(`
+        expect(printStatics(mod.statics!).trim()).to.equal(unpad(`
         static(a(S0, S1), Ret) :- dom(b, S0), dom(c, S1), dom(d, Ret).
 
 
@@ -79,7 +80,7 @@ describe("Printing Projection", () => {
                 q : r x s -> booleans
         `);
 
-        expect(printFluents(mod.fluents).trim()).to.equal(unpad(`
+        expect(printFluents(mod.fluents!).trim()).to.equal(unpad(`
         fluent(basic, a(S0, S1), Ret) :- dom(b, S0), dom(c, S1), dom(d, Ret).
 
 
@@ -93,53 +94,134 @@ describe("Printing Projection", () => {
         `).trim());
     });
 
-    it("printStateConstraints", () => {
-        const mod = parseModule(`
-        module foo_bar
-        fluents
-            basic
-                bam : a -> b
-            defined
-                foo : a x b -> booleans
-                bar : a x b -> booleans
-        axioms
-            foo(X, Y) if bar(X, Y),
-                X > Y.
-            bar(A, B) if bam(A) = B,
-                A != B.
-        `);
+    describe("Axioms", () => {
+        it("printStateConstraints", () => {
+            const mod = parseModule(`
+            module foo_bar
+            sorts
+                a :: { a1, a2 }
+                b :: { b1, b2 }
+            statics
+                s : integers -> booleans
+            fluents
+                basic
+                    bam : a -> b
+                defined
+                    foo : a x b -> booleans
+                    bar : a x b -> b
+            axioms
+                foo(A, B) if
+                    bar(A, B) = b1,
+                    -foo(A, B),
+                    s(X),
+                    -s(Y),
+                    X > Y * Y,
+                    X < Y,
+                    X >= Y,
+                    X <= Y,
+                    X = Y + 1,
+                    X != Y.
+            
+                    
+                bar(A, B) = b2 if bam(A) != B.
+             `);
 
-        expect(printStateConstraints(mod).trim()).to.equal(unpad(`
-        state_constraint(axiom1(X, Y)) :- dom(a, X), dom(b, Y).
-        state_constraint(axiom2(A, B)) :- dom(a, A), dom(b, B).
-        `).trim());
+            expect(printStateConstraints(mod).trim()).to.equal(unpad(`
+            state_constraint(axiom1(A, B, X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            head(axiom1(A, B, X, Y), pos_fluent(foo(A, B), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+
+            body(axiom1(A, B, X, Y), pos_fluent(bar(A, B), b1)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(A, B, X, Y), neg_fluent(foo(A, B), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(A, B, X, Y), pos_static(s(X), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(A, B, X, Y), neg_static(s(Y), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(A, B, X, Y), gt(X, Y * Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(A, B, X, Y), lt(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(A, B, X, Y), gte(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(A, B, X, Y), lte(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(A, B, X, Y), eq(X, Y + 1)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(A, B, X, Y), neq(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            
+
+            state_constraint(axiom2(A, B)) :- dom(a, A), dom(b, B).
+            head(axiom2(A, B), pos_fluent(bar(A, B), b2)) :- dom(a, A), dom(b, B).
+
+            body(axiom2(A, B), neg_fluent(bam(A), B)) :- dom(a, A), dom(b, B).
+            `).trim());
+        });
+
+        it("printCausalLaws", () => {
+            const mod = parseModule(`
+            module foo_bar
+            sorts
+                a :: { a1, a2 }
+                b :: { b1, b2 }
+                act :: action
+            statics
+                s : integers -> booleans
+            fluents
+                basic
+                    bam : a -> b
+                defined
+                    foo : a x b -> booleans
+                    bar : a x b -> b
+            axioms
+                occurs(W) causes foo(A, B) if
+                    instance(W, act),
+                    bar(A, B) = b1,
+                    -foo(A, B),
+                    s(X),
+                    -s(Y),
+                    X > Y * Y,
+                    X < Y,
+                    X >= Y,
+                    X <= Y,
+                    X = Y + 1,
+                    X != Y.
+             `);
+
+            expect(printCausalLaws(mod).trim()).to.equal(unpad(`
+            dlaw(axiom1(W, A, B, X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            action(axiom1(W, A, B, X, Y), W) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            head(axiom1(W, A, B, X, Y), pos_fluent(foo(A, B), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+
+            body(axiom1(W, A, B, X, Y), pos_static(instance(W, act), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), pos_fluent(bar(A, B), b1)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), neg_fluent(foo(A, B), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), pos_static(s(X), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), neg_static(s(Y), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), gt(X, Y * Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), lt(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), gte(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), lte(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), eq(X, Y + 1)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(axiom1(W, A, B, X, Y), neq(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            `).trim());
+        });
     });
 
-    it.only("printStateConstraints", () => {
+    it("printStaticAssignments", () => {
         const mod = parseModule(`
         module foo_bar
-        fluents
-            basic
-                bam : a -> b
-            defined
-                foo : a x b -> booleans
-                bar : a x b -> s
         axioms
-            foo(X, Y) if bar(X, Y),
-                X > Y.
-            bar(A, B) = w if bam(A) = B,
-                A != B.
+            s(10).
         `);
 
-        console.log(printStateConstraints(mod));
+        expect(printStaticAssignments(mod).trim()).to.equal(unpad(`
+        holds(static(s(10), true)).
+        `).trim())
+    });
 
-        expect(printStateConstraints(mod).trim()).to.equal(unpad(`
-        state_constraint(axiom1(X, Y)) :- dom(a, X), dom(b, Y).
-        head(axiom1(X, Y), pos(foo(X, Y), true)) :- dom(a, X), dom(b, Y).
-        
-        
-        state_constraint(axiom2(A, B)) :- dom(a, A), dom(b, B).
-        head(axiom2(A, B), pos(bar(A, B), w)) :- dom(a, A), dom(b, B).
-        `).trim());
+    it("printInitially", () => {
+        const mod = parseModule(`
+        module foo_bar
+        initially
+            next_todo = 1.
+            active_filter = all.
+        `);
+
+        expect(printInitially(mod).trim()).to.equal(unpad(`
+        holds(next_todo, 1, 0).
+        holds(active_filter, all, 0).
+        `).trim())
     });
 });

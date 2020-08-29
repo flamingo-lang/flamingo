@@ -1,7 +1,9 @@
 import { ModuleAST, Sorts, Statics, Fluents } from "./parse";
 
+export type Signature = { args?: string[], ret: string };
+
 export function collectAttributeSignatures(x: Sorts | null) {
-    const m: Record<string, { args?: string[], ret: string }> = {};
+    const m: Record<string, Signature> = {};
     if (x) {
         const { value: sorts } = x;
         for (const { first, attributes } of sorts) {
@@ -21,7 +23,7 @@ export function collectAttributeSignatures(x: Sorts | null) {
 }
 
 export function collectStaticSignatures(x: Statics | null) {
-    const m: Record<string, { args?: string[], ret: string }> = {};
+    const m: Record<string, Signature> = {};
     if (x) {
         const { value: statics } = x;
         for (const { value: { ident: { value: ident }, args, ret } } of statics) {
@@ -35,7 +37,7 @@ export function collectStaticSignatures(x: Statics | null) {
 }
 
 export function collectFluentSignatures(x: Fluents | null) {
-    const m: Record<string, { args?: string[], ret: string }> = {};
+    const m: Record<string, Signature> = {};
     if (x) {
         const { basic, defined } = x;
         const fluents = [
@@ -53,8 +55,16 @@ export function collectFluentSignatures(x: Fluents | null) {
     return m;
 }
 
-export function collectFunctionSignatures(mod: ModuleAST) {
+export function collectFunctionSignatures(mod: ModuleAST): Record<string, Signature> {
     return {
+        "instance": {
+            args: ["universe", "universe"],
+            ret: "booleans"
+        },
+        "is_a": {
+            args: ["universe"],
+            ret: "sort"
+        },
         ...collectAttributeSignatures(mod.sorts),
         ...collectStaticSignatures(mod.statics),
         ...collectFluentSignatures(mod.fluents),

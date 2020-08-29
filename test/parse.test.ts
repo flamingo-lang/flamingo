@@ -52,7 +52,7 @@ describe("Parsing", () => {
         const result1: FunctionLiteral = ALM.FunctionLiteral.tryParse("f(A) = g");
         expect(result1.name).to.equal(Nodes.FunctionLiteral);
         expect(result1.value.fn).to.equal("f");
-        expect(result1.value.args.map(x => (x.value as any).value)).to.deep.equal(["A"]);
+        expect(result1.value.args!.map(x => (x.value as any).value)).to.deep.equal(["A"]);
         expect((result1.value.ret as any).value.value).to.deep.equal("g");
         expect(result1.value.negated).to.be.false;
         expect((result1.value.node as any).name).to.equal(Nodes.FunctionAssignment);
@@ -60,7 +60,7 @@ describe("Parsing", () => {
         const result2: FunctionLiteral = ALM.FunctionLiteral.tryParse("f(A)");
         expect(result2.name).to.equal(Nodes.FunctionLiteral);
         expect(result2.value.fn).to.equal("f");
-        expect(result2.value.args.map(x => (x.value as any).value)).to.deep.equal(["A"]);
+        expect(result2.value.args!.map(x => (x.value as any).value)).to.deep.equal(["A"]);
         expect((result2.value.ret as any)).to.be.true;
         expect(result2.value.negated).to.be.false;
         expect((result2.value.node as any).name).to.equal(Nodes.FunctionTerm);
@@ -68,7 +68,7 @@ describe("Parsing", () => {
         const result3: FunctionLiteral = ALM.FunctionLiteral.tryParse("-f(A)");
         expect(result3.name).to.equal(Nodes.FunctionLiteral);
         expect(result3.value.fn).to.equal("f");
-        expect(result3.value.args.map(x => (x.value as any).value)).to.deep.equal(["A"]);
+        expect(result3.value.args!.map(x => (x.value as any).value)).to.deep.equal(["A"]);
         expect((result3.value.ret as any)).to.be.true;
         expect(result3.value.negated).to.be.true;
         expect((result3.value.node as any).name).to.equal(Nodes.FunctionTerm);

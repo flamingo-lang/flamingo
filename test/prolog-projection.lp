@@ -19,7 +19,7 @@ dom(s, n).
 dom(s, nPrime).
 
 % For every attribute of s a : s1 x s2 ... sn -> sPrime
-attr(a(S0, S1, SN), SPrime) :- dom(s0, S0), dom(s1, S1), dom(sn, SN), dom(sPrime, SPrime).
+static(a(S0, S1, SN), SPrime) :- dom(s0, S0), dom(s1, S1), dom(sn, SN), dom(sPrime, SPrime).
 
 % For every static st : s0 x s1 ... sn -> sPrime
 static(st(S0, S1, S2,SN), SPrime) :- dom(s0, S0), dom(s1, S1), dom(sn, SN), dom(sPrime, SPrime).
@@ -49,9 +49,9 @@ head(d(X1, XN), pos(f(X2))) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
 % For every conjunct in the body of rule R (being either a state constraint or dynamic causal law),
 % with variables X0..XN, match against the following cases:
 % f(X0) where f is a fluent
-body(r(X1, XN), pos(f(X0))) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
+body(r(X1, XN), pos_fluent(f(X0))) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
 % -f(X0) where f is a fluent
-body(r(X1, XN), neg(f(X0))) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
+body(r(X1, XN), neg_fluent(f(X0))) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
 % f(X0) where f is a static
 body(r(X1, XN), pos_static(f(X0))) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
 % -f(X0) where f is a static
@@ -70,19 +70,19 @@ body(r(X1, XN), eq(X1, X2)) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
 body(r(X1, XN), neq(X1, X2)) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
 
 % For every static assignment f(x) = y.
-holds(static(x, y)).
+holds(static(f(x), y)).
 
 %%%%%%%%%%%%%%%%%%%%% Static Part of Encoding %%%%%%%%%%%%%%%%%%%%
 count(X, E, N) :- findall(X, E, L), length(L, N).
 time(X) :- n(N), X < N, X >= 0.
 % The body of a rule R is satisfied at time T when all its conditions are satisfied.
-body_satisied(R,T) :-
+body_satisfied(R,T) :-
     time(T),
-    count(F, (body(R,pos(F,V)), fluent(_,F,V)), PB),
-    count( F, (body(R,pos(F,V)), fluent(_,F,V), holds(F, V, T) ), PB),
+    count(F, (body(R,pos_fluent(F,V)), fluent(_,F,V)), PB),
+    count( F, (body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, T) ), PB),
 
-    count( F, (body(R,neg(F,V)), fluent(_,F,V)), NB),
-    count( F, (body(R,neg(F,V)), fluent(_, F,V), not_holds(F,V,T)), NB),
+    count( F, (body(R,neg_fluent(F,V)), fluent(_,F,V)), NB),
+    count( F, (body(R,neg_fluent(F,V)), fluent(_, F,V), not_holds(F,V,T)), NB),
 
     count( F, (body(R,pos_static(F,V))), PB),
     count( F, (body(R,pos_static(F,V)), holds(static(F,V))), PB),
@@ -103,10 +103,10 @@ body_satisied(R,T) :-
     count( E, (body(R, lte(A, B)), A =< B),  LTE),
 
     count( E, (body(R, eq(A, B))),  EQ),
-    count( E, (body(R, eq(A, B)), A == B ),  EQ),
+    count( E, (body(R, eq(A, B)), A =:= B ),  EQ),
 
     count( E, (body(R, neq(A, B))),  NEQ),
-    count( E, (body(R, neq(A, B)), A \== B ),  NEQ).
+    count( E, (body(R, neq(A, B)), A =\= B ),  NEQ).
 
 % The head of a dynamic causal law becomes true at time T + 1
 % if, at time T, its action occurs and its body is satisfied.
@@ -114,30 +114,29 @@ holds(F, V, T + 1) :-
     dlaw(R),
     action(R, X),
     occurs(X, T),
-    body_satisied(R, T),
-    head(R, pos(F,V)).
+    body_satisfied(R, T),
+    head(R, pos_fluent(F,V)).
 
 not_holds(F, V, T + 1) :-
     dlaw(R),
     action(R, X),
     occurs(X, T),
-    body_satisied(R, T),
-    head(R, neg(F,V)).
+    body_satisfied(R, T),
+    head(R, neg_fluent(F,V)).
 
 % The head of a state constraint is true at time T
 % if its body is satisfied at time T.
 holds(F, V, T) :-
     state_constraint(R),
     head(R, pos(F,V)),
-    body_satisied(R, T).
+    body_satisfied(R, T).
 
 not_holds(F, V, T) :-
     state_constraint(R),
     head(R, neg(F,V)),
-    body_satisied(R, T).
+    body_satisfied(R, T).
 
 % Contrain functions to have exactly one value.
-fail :- holds(attr(F, V)), holds(attr(F, VPrime)), V \== VPrime.
 fail :- holds(static(F, V)), holds(static(F, VPrime)), V \== VPrime.
 fail :- holds(fluent(_, F, V)), holds(fluent(_, F, VPrime)), V \== VPrime.
 
@@ -162,7 +161,7 @@ not_holds(F, V, T + 1) :-
 % If S is a direct subsort of SPrime (that is, if link(S, SPrime)
 % is true), then any elements in the domain of S are also
 % in the domain of SPrime.
-dom(SPrime, X) :- static(link(S), SPrime), dom(S, X).
+dom(SPrime, X) :- holds(static(link(S), SPrime)), dom(S, X).
 
 
 %%%%%% Universal Facts %%%%%%%%%

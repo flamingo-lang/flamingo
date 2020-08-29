@@ -24,6 +24,8 @@ describe("collectFunctionSignatures", () => {
         visible : todos -> booleans 
         `);
         expect(collectFunctionSignatures(mod1)).to.deep.equal({
+            instance: { args: ["universe", "universe"], ret: "booleans" },
+            is_a: { args: ["universe"], ret: "sort" },
             text: { args: ['new_todo'], ret: 'string' },
             complement: { args: ['booleans'], ret: 'booleans' },
             next_todo: { args: [], ret: 'todos' },
@@ -43,7 +45,10 @@ describe("collectFunctionSignatures", () => {
         defined
         visible : todos -> booleans 
         `);
+
         expect(collectFunctionSignatures(mod2)).to.deep.equal({
+            instance: { args: ["universe", "universe"], ret: "booleans" },
+            is_a: { args: ["universe"], ret: "sort" },
             complement: { args: ['booleans'], ret: 'booleans' },
             next_todo: { args: [], ret: 'todos' },
             destroyed: { args: ['todos'], ret: 'booleans' },
