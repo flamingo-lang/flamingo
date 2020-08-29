@@ -1,5 +1,7 @@
-import { ModuleAST, Sorts, Statics, Fluents, FunctionDecl } from "./parse";
+import { Nodes, ModuleAST, Sorts, Statics, Fluents, FunctionDecl, StateConstraint, FunctionLiteral, Variable, ArithmeticExpression, ArithmeticTerm, Term, BasicArithmeticTerm, BasicTerm } from "./parse";
 import { unpad } from "./unpad";
+import { collectFunctionSignatures } from "./collectFunctionSignatures";
+import { Parser } from "parsimmon";
 
 
 export function printSortNames(sorts: Sorts) {
@@ -90,7 +92,188 @@ export function printFluents({ basic, defined }: Fluents) {
     ].flat(Infinity).join("\n");
 }
 
-// export function printProjection(mod: ModuleAST) {
+function isVariable(x: any): x is Variable {
+    return typeof x === "object" && x.name === Nodes.Variable;
+}
+
+function getVariablesFromFnLit(fnLit: FunctionLiteral): { args: [Variable, number][][], ret: Variable[] | null } {
+    const { args, ret } = fnLit.value;
+    return {
+        ret: (() => {
+            if (ret === true) {
+                return null
+            } else if (ret.name === "BasicTerm") {
+                return isVariable(ret.value) ? [ret.value] : null;
+            } else {
+                return ret.value.filter(isVariable);
+            }
+        })(),
+        args: args.map((arg, i) => {
+            if (Array.isArray(arg.value)) {
+                return arg.value.filter(isVariable)
+                    .map(t => [t, i]);
+            } else if (isVariable(arg.value)) {
+                return [[arg.value, i]]
+            } else {
+                return []
+            }
+        }),
+    }
+}
+
+function getVariablesFromArithmeticTerm({ value: [left, _, right] }: ArithmeticTerm) {
+    return [left, right].filter(isVariable);
+}
+
+function getVariablesFromTerm(term: Term) {
+    return term.name === "BasicTerm"
+        ? (isVariable(term.value) ? [term.value] : [])
+        : getVariablesFromArithmeticTerm(term);
+
+}
+
+const printBasicArithmeticTerm = (term: BasicArithmeticTerm) =>
+    (typeof term === "number") ? term.toString() : term.value;
+
+const printArithmeticTerm = ({ value: [left, op, right] }: ArithmeticTerm) =>
+    `${printBasicArithmeticTerm(left)} ${op} ${printBasicArithmeticTerm(right)}`;
+
+const printBasicTerm = (term: BasicTerm) =>
+    (typeof term.value === "object" && term.value.name === "Boolean")
+        ? `${term.value.value}`
+        : printBasicArithmeticTerm(term.value);
+
+const printTerm = (term: Term) =>
+    (term.name === "ArithmeticTerm")
+        ? printArithmeticTerm(term)
+        : printBasicTerm(term);
+
+export function printStateConstraints(mod: ModuleAST): string {
+    const fnSignatures = collectFunctionSignatures(mod);
+    const state_constraints = mod.axioms.filter(({ name }) => name === Nodes.StateConstraint)
+        .map((axiom, i) => {
+            const { value: { body, head } } = axiom as unknown as StateConstraint;
+            const varMap = body.filter(clause => clause.name === "FunctionLiteral")
+                .reduce((prev, curr) => {
+                    const vars = getVariablesFromFnLit(curr as FunctionLiteral);
+                    const sig = fnSignatures[(curr as FunctionLiteral).value.fn];
+                    for (const a of vars.args) {
+                        for (const [v, n] of a) {
+                            prev[v.value] = sig.args![n];
+                        }
+                    }
+                    if (vars.ret) {
+                        for (const r of vars.ret) {
+                            prev[r.value] = sig.ret;
+                        }
+                    }
+                    return prev;
+                }, {} as Record<string, string>);
+
+            for (const clause of body.filter(clause => clause.name === "ArithmeticExpression")) {
+                const { value: [left, _, right] } = clause as ArithmeticExpression;
+
+                const vars = getVariablesFromTerm(left).concat(getVariablesFromTerm(right));
+
+                const varInMap = vars.find(x => x.value in varMap);
+                const sort = varMap[varInMap!.value];
+
+                for (const v of vars) {
+                    if (!(v.value in varMap)) {
+                        varMap[v.value] = sort;
+                    }
+                }
+            }
+            const vars = Object.keys(varMap).join(", ");
+            const doms = []
+            for (const key in varMap) {
+                doms.push(`dom(${varMap[key]}, ${key})`)
+            };
+
+            const head_rule = (() => {
+                if (head !== "false") {
+                    const { fn, args, ret, negated } = head.value;
+                    const ret_str = typeof ret === "object"
+                        ? printTerm(ret) : "true";
+                    const args_str = args.map(printTerm).join(", ");
+                    const wrapper = negated ? "neg" : "pos";
+                    return `${wrapper}(${fn}(${args_str}), ${ret_str})`;
+                } else {
+                    return ""
+                }
+            })();
+            const doms_str = doms.join(", ");
+            return unpad(`
+            state_constraint(axiom${i + 1}(${vars})) :- ${doms_str}.
+            head(axiom${i + 1}(${vars}), ${head_rule}) :- ${doms_str}.
+            `);
+        });
+    return state_constraints.join("\n");
+}
+
+export function printCausalLaws(mod: ModuleAST): string {
+    const fnSignatures = collectFunctionSignatures(mod);
+    const state_constraints = mod.axioms.filter(({ name }) => name === Nodes.StateConstraint)
+        .map((axiom, i) => {
+            const { value: { body, head } } = axiom as unknown as StateConstraint;
+            const varMap = body.filter(clause => clause.name === "FunctionLiteral")
+                .reduce((prev, curr) => {
+                    const vars = getVariablesFromFnLit(curr as FunctionLiteral);
+                    const sig = fnSignatures[(curr as FunctionLiteral).value.fn];
+                    for (const a of vars.args) {
+                        for (const [v, n] of a) {
+                            prev[v.value] = sig.args![n];
+                        }
+                    }
+                    if (vars.ret) {
+                        for (const r of vars.ret) {
+                            prev[r.value] = sig.ret;
+                        }
+                    }
+                    return prev;
+                }, {} as Record<string, string>);
+
+            for (const clause of body.filter(clause => clause.name === "ArithmeticExpression")) {
+                const { value: [left, _, right] } = clause as ArithmeticExpression;
+
+                const vars = getVariablesFromTerm(left).concat(getVariablesFromTerm(right));
+
+                const varInMap = vars.find(x => x.value in varMap);
+                const sort = varMap[varInMap!.value];
+
+                for (const v of vars) {
+                    if (!(v.value in varMap)) {
+                        varMap[v.value] = sort;
+                    }
+                }
+            }
+            const vars = Object.keys(varMap).join(", ");
+            const doms = []
+            for (const key in varMap) {
+                doms.push(`dom(${varMap[key]}, ${key})`)
+            };
+
+            const head_rule = (() => {
+                if (head !== "false") {
+                    const { fn, args, ret, negated } = head.value;
+                    const ret_str = typeof ret === "object"
+                        ? printTerm(ret) : "true";
+                    const args_str = args.map(printTerm).join(", ");
+                    const wrapper = negated ? "neg" : "pos";
+                    return `${wrapper}(${fn}(${args_str}), ${ret_str})`;
+                } else {
+                    return ""
+                }
+            })();
+            const doms_str = doms.join(", ");
+            return unpad(`
+            state_constraint(axiom${i + 1}(${vars})) :- ${doms_str}.
+            head(axiom${i + 1}(${vars}), ${head_rule}) :- ${doms_str}.
+            `);
+        });
+    return state_constraints.join("\n");
+}
+// // export function printProjection(mod: ModuleAST) {
 
 //     attributes === null ? "" : (...attributes!.map(attr => ""))
 //     const rules = [

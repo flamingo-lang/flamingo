@@ -205,7 +205,7 @@ describe("Parsing", () => {
                 attributes
                     f : booleans
             x :: 1..10
-            y, z :: {m, n, o}
+            y, z :: { m, n, o }
         `);
         const a = results.value[0];
         expect(a.first[0].value).to.equal("foo");

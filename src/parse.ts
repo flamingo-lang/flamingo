@@ -29,13 +29,53 @@ export type Boolean = P.Node<"Boolean", boolean>;
 export type Identifier = P.Node<"Identifier", string>;
 export type Variable = P.Node<"Variable", string>;
 export type BasicArithmeticTerm = Variable | Identifier | number;
-export type BasicTerm = P.Node<"Variable", BasicArithmeticTerm | Boolean>;
-export type ArithmeticOp = "+" | "-" | "*" | "/" | "mod";
+
+// function isVariable(x: any): x is Variable {
+//     return typeof x === "object" && x.name === Nodes.Variable;
+// }
+
+// function getVariables(x: any): Variable[] {
+//     if (isVariable(x)) {
+//         return [x];
+//     } if(typeof x === "object")  {
+//         return Object.values(x).reduce((prev: Variable[], curr) => {
+//             if (isVariable(curr)) {
+//                 return [...prev, curr];
+//             } else {
+//                 return [];
+//             }
+//         }, []);
+//     } else {
+//         return [];
+//     }
+// }
+
+// function getVarSortsFromFunctionLit(mod: ModuleAST, {value: {fn, args, ret}}: FunctionLiteral): ([string, string])[] {
+//     const attrs = mod.sorts.value.flatMap(({ first, attributes }) =>
+//         first.map(({ value }) => [value, ...attributes?.map(attr => {
+
+//         }) ?? []]));
+//     ) ?? [])
+//     const sorts = 
+//     const foo = args.flatMap((arg, i) => {
+//         if (arg.name === "ArithmeticTerm") {
+//             const variable = arg.value.find(isVariable);
+//             if (variable) { 
+//             }
+//             return [, "integer"]
+//         }
+//         arg.name
+//     });
+// }
+
+
+export type BasicTerm = P.Node<"BasicTerm", BasicArithmeticTerm | Boolean>;
+export type ArithmeticOp = "+" | "-" | "*" | "/";
 export type ArithmeticTerm = P.Node<"ArithmeticTerm", [BasicArithmeticTerm, ArithmeticOp, BasicArithmeticTerm]>;
 export type ComparisonRel = ">" | ">=" | "<" | "<=";
 export type ArithmeticRel = ComparisonRel | "=" | "!=";
 export type Term = ArithmeticTerm | BasicTerm;
-export type FunctionTerm = P.Node<"FunctionTerm", { negated: boolean, fn: Identifier, args: Term[] }>
+export type FunctionTerm = P.Node<"FunctionTerm", { negated: boolean, fn: Identifier, args: BasicTerm[] }>
 export type FunctionAssignment = P.Node<"FunctionAssignment", {
     fnTerm: FunctionTerm | Identifier,
     operator: "=" | "!=",
@@ -101,7 +141,7 @@ const sepByWhiteSpace = (...ps: P.Parser<any>[]) =>
 export const ALM = P.createLanguage({
     True: () => P.string("true"),
     False: () => P.string("false"),
-    Boolean: r => P.alt(r.True, r.False)
+    Boolean : r => P.alt(r.True, r.False)
         .desc("a boolean")
         .map(Boolean)
         .node(Nodes.Boolean),
@@ -125,7 +165,7 @@ export const ALM = P.createLanguage({
     FunctionTerm: r => P.seq(
         r.Negation,
         r.Identifier,
-        commaSeparated(r.Term)
+        commaSeparated(r.BasicTerm)
             .wrap(P.string("("), P.string(")")))
         .node(Nodes.FunctionTerm)
         .map(({ value: [negated, fn, args], ...node }) => ({
@@ -252,8 +292,11 @@ export const ALM = P.createLanguage({
         commaSeparated(r.SortName),
         r.Attributes.fallback(null)
     ).map(([first, second, attributes]) => ({ first, second, attributes })),
-    Set: r => commaSeparated(r.Identifier).wrap(P.string("{"), P.string("}"))
-        .map(x => new Set(x)),
+    Set: r => commaSeparated(r.Identifier)
+        .wrap(
+            P.string("{").skip(P.optWhitespace),
+            P.string("}").skip(P.optWhitespace)
+        ).map(x => new Set(x)),
     SortName: r => P.alt(
         r.Identifier,
         P.seq(r.Integer.skip(P.string("..")), r.Integer),

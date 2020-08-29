@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { unpad } from "../src/unpad";
-import { printAttributes, printSortNames, printStatics, printFluents } from "../src/projection_printer";
+import { printAttributes, printSortNames, printStatics, printFluents, printStateConstraints } from "../src/projection_printer";
 import { parseModule } from "../src/parse";
 
 describe("Printing Projection", () => {
@@ -97,16 +97,49 @@ describe("Printing Projection", () => {
         const mod = parseModule(`
         module foo_bar
         fluents
-            foo : a x b -> booleans
-            bar : a x b -> booleans
-            bam : a -> b
+            basic
+                bam : a -> b
+            defined
+                foo : a x b -> booleans
+                bar : a x b -> booleans
         axioms
-            foo(X, Y) :- bar(X, Y).
-            bar(A, B) :- bam(A) = B.
+            foo(X, Y) if bar(X, Y),
+                X > Y.
+            bar(A, B) if bam(A) = B,
+                A != B.
         `);
 
-        expect(printStateConstraints(mod.axioms).trim()).to.equal(unpad(`
-        state_constraint(axiom1(X, Y)) :- dom(s1, X1), dom(s2, X2), dom(sn, SN).
+        expect(printStateConstraints(mod).trim()).to.equal(unpad(`
+        state_constraint(axiom1(X, Y)) :- dom(a, X), dom(b, Y).
+        state_constraint(axiom2(A, B)) :- dom(a, A), dom(b, B).
+        `).trim());
+    });
+
+    it.only("printStateConstraints", () => {
+        const mod = parseModule(`
+        module foo_bar
+        fluents
+            basic
+                bam : a -> b
+            defined
+                foo : a x b -> booleans
+                bar : a x b -> s
+        axioms
+            foo(X, Y) if bar(X, Y),
+                X > Y.
+            bar(A, B) = w if bam(A) = B,
+                A != B.
+        `);
+
+        console.log(printStateConstraints(mod));
+
+        expect(printStateConstraints(mod).trim()).to.equal(unpad(`
+        state_constraint(axiom1(X, Y)) :- dom(a, X), dom(b, Y).
+        head(axiom1(X, Y), pos(foo(X, Y), true)) :- dom(a, X), dom(b, Y).
+        
+        
+        state_constraint(axiom2(A, B)) :- dom(a, A), dom(b, B).
+        head(axiom2(A, B), pos(bar(A, B), w)) :- dom(a, A), dom(b, B).
         `).trim());
     });
 });
