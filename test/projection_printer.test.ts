@@ -2,7 +2,6 @@ import { expect } from "chai";
 import { unpad } from "../src/unpad";
 import { printAttributes, printSortNames, printStatics, printFluents, printStateConstraints, printCausalLaws, printStaticAssignments, printInitially } from "../src/projection_printer";
 import { parseModule } from "../src/parse";
-import { collectFunctionSignatures } from "../src/collectFunctionSignatures";
 
 describe("Printing Projection", () => {
     it("printSortNames", () => {
@@ -10,7 +9,7 @@ describe("Printing Projection", () => {
         module foo_bar
         sorts
             foo :: bar, bam
-            x :: 1..10
+            x :: 1..3
             y :: {a, b, c}
 
         `);
@@ -26,10 +25,12 @@ describe("Printing Projection", () => {
         sort(x).
 
         holds(static(link(x), integers)).
-        dom(x, 1..10).
+        dom(x, 1). dom(x, 2). dom(x, 3).
+        holds(static(is_a(1), x)). holds(static(is_a(2), x)). holds(static(is_a(3), x)).
 
         sort(y).
         dom(y, a). dom(y, b). dom(y, c).
+        holds(static(is_a(a), y)). holds(static(is_a(b), y)). holds(static(is_a(c), y)).
         `).trim());
 
     });

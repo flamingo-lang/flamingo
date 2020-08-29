@@ -13,10 +13,15 @@ describe("Tau Parsing", () => {
         }
     });
 
-    it.only("Should print todomvc", () => {
+    it("Should print todomvc", () => {
         const alm = parseModule(`
         module todomvc
+        sorts
+            todos :: integers
+            special_todos :: 1..10, todos
+            todo_state :: { complete, incomplete }
         `);
+
         const logic = printModule(alm);
         console.log(logic);
         const s = create();

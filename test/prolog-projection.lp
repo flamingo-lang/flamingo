@@ -1,6 +1,11 @@
-% #const n = 1.
 :-dynamic(n/1).
 :-dynamic(occurs/2).
+:- discontiguous(sort/1). 
+:- discontiguous(holds/1). 
+:- discontiguous(dom/2). 
+:- discontiguous(head/2). 
+:- discontiguous(holds/3). 
+:- discontiguous(not_holds/3). 
 %%%%%%%%%%%%%%%% Dynamic Part of Encoding %%%%%%%%%%%%%%%%%
 %%%% Signature %%%%%%
 % For every sort s :: sPrime
@@ -32,9 +37,9 @@ fluent(defined, d(S0, S1, S2,SN), SPrime) :- dom(s0, S0), dom(s1, S1), dom(sn, S
 
 % %%%%%%% Axioms %%%%%%%
 % For every state constraint with lable sc and variables X1..XN
-state_constraint(sc(X1, XN)) :- dom(s1, X1), dom(s2, X2), dom(sn, SN).
+state_constraint(sc(X1, XN)) :- dom(s1, X1), dom(s2, X2), dom(sn, XN).
 % For every state constraint with label sc of the form "f(X0) = X1 if ..."
-head(sc(X1, XN), pos(f(X0), X1)) :- dom(s1, X1), dom(s2, X2),  dom(sn, SN).
+head(sc(X1, XN), pos(f(X0), X1)) :- dom(s1, X1), dom(s2, X2),  dom(sn, XN).
 
 % For every dynamic causal law with lable d and variables X1..XN
 % where law begins with "occurs(X) causes ..."
@@ -136,9 +141,6 @@ not_holds(F, V, T) :-
     head(R, neg(F,V)),
     body_satisfied(R, T).
 
-% Contrain functions to have exactly one value.
-fail :- holds(static(F, V)), holds(static(F, VPrime)), V \== VPrime.
-fail :- holds(fluent(_, F, V)), holds(fluent(_, F, VPrime)), V \== VPrime.
 
 % CWA for defined fluents
 not_holds(F, V, T) :- fluent(defined, F, V), \+ holds(F, V, T).
@@ -149,14 +151,14 @@ holds(F, V, T + 1) :-
     holds(F, V, T),
     \+ not_holds(F, V, T + 1),
     n(N),
-    I < N.
+    T < N.
 
 not_holds(F, V, T + 1) :-
     fluent(basic, F, V),
     not_holds(F, V, T),
     \+ holds(F, V, T + 1),
     n(N),
-    I < N.
+    T < N.
 
 % If S is a direct subsort of SPrime (that is, if link(S, SPrime)
 % is true), then any elements in the domain of S are also
@@ -174,8 +176,8 @@ dom(booleans, (true; false)).
 holds(static(link(action), universe)).
 
 % The static is_a relation
-holds(static(is_a(X), S)) :- dom(S, X).
+% holds(static(is_a(X), S)) :- dom(S, X).
 
 % The static instance relation, the transitive closure of is_a.
-holds(static(instance(X, S), true)) :- holds(static(is_a(X), S)).
-holds(static(instance(X, S1), true)) :- holds(static(instance(X, S2), true)), holds(static(link(S2), S1)).
+% holds(static(instance(X, S), true)) :- holds(static(is_a(X), S)).
+% holds(static(instance(X, S1), true)) :- holds(static(instance(X, S2), true)), holds(static(link(S2), S1)).

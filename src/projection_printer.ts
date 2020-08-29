@@ -1,6 +1,7 @@
 import { Nodes, ModuleAST, Sorts, Statics, Fluents, FunctionDecl, StateConstraint, FunctionLiteral, Variable, ArithmeticExpression, ArithmeticTerm, Term, BasicArithmeticTerm, BasicTerm, CausalLaw, Fact } from "./parse";
 import { unpad } from "./unpad";
 import { collectFunctionSignatures } from "./collectFunctionSignatures";
+import { range } from "rambda";
 
 
 export function printSortNames(sorts: Sorts) {
@@ -9,10 +10,15 @@ export function printSortNames(sorts: Sorts) {
             `sort(${firstSortName}).`,
             second.map((secondSortName) => {
                 if (Array.isArray(secondSortName)) {
+                    const doms = range(secondSortName[0], secondSortName[1] + 1)
+                   .map(x => `dom(${firstSortName}, ${x}).`).join(" ") 
+                   const is_a = range(secondSortName[0], secondSortName[1] + 1)
+                   .map(x => `holds(static(is_a(${x}), ${firstSortName})).`).join(" ") 
                     // Range case
                     return unpad(`
                         holds(static(link(${firstSortName}), integers)).
-                        dom(${firstSortName}, ${secondSortName[0]}..${secondSortName[1]}).
+                        ${doms}
+                        ${is_a}
                         `);
                 } else if ("name" in secondSortName) {
                     // Identifier Case
@@ -21,8 +27,12 @@ export function printSortNames(sorts: Sorts) {
                         `);
                 } else {
                     // Set literal case
-                    return Array.from(secondSortName).map(({ value }) =>
+                    const arr = Array.from(secondSortName);
+                    const doms = arr.map(({ value }) =>
                         `dom(${firstSortName}, ${value}).`).join(" ");
+                    const is_a = arr.map(x => `holds(static(is_a(${x.value}), ${firstSortName})).`).join(" ") 
+                    return `${doms}\n${is_a}`
+
                 }
             }),
         ])).flat(Infinity).join("\n");
@@ -145,7 +155,7 @@ function getFnMap(mod: ModuleAST): Record<string, "static" | "fluent"> {
     }
     return {
         "instance": "static",
-        "is_a": "static",
+        // "is_a": "static",
         ...statics,
         ...fluents
     };
@@ -454,9 +464,6 @@ export function printModule(mod: ModuleAST): string {
         head(R, neg(F,V)),
         body_satisfied(R, T).
     
-    fail :- holds(static(F, V)), holds(static(F, VPrime)), V \\== VPrime.
-    fail :- holds(fluent(_, F, V)), holds(fluent(_, F, VPrime)), V \\== VPrime.
-
     not_holds(F, V, T) :- fluent(defined, F, V), \\+ holds(F, V, T).
     
     holds(F, V, T + 1) :-
@@ -464,37 +471,25 @@ export function printModule(mod: ModuleAST): string {
         holds(F, V, T),
         \\+ not_holds(F, V, T + 1),
             n(N),
-            I < N.
+            T < N.
 
     not_holds(F, V, T + 1) :-
         fluent(basic, F, V),
         not_holds(F, V, T),
         \\+ holds(F, V, T + 1),
         n(N),
-        I < N.
+        T < N.
 
-    dom(SPrime, X) :- holds(static(link(S), SPrime)), dom(S, X).
-
+    dom(todos, X) :- holds(static(link(special_todos), todos)), dom(special_todos, X).
 
     holds(static(link(booleans), universe)).
     dom(booleans, true). dom(booleans, false).
 
     holds(static(link(action), universe)).
 
-    holds(static(is_a(X), S)) :- dom(S, X).
+    %holds(static(is_a(X), S)) :- dom(S, X).
 
-    holds(static(instance(X, S), true)) :- holds(static(is_a(X), S)).
-    holds(static(instance(X, S1), true)) :- holds(static(instance(X, S2), true)), holds(static(link(S2), S1)).
-
-    dom(integers, 1).
-    dom(integers, 2).
-    dom(integers, 3).
-    dom(integers, 4).
-    dom(integers, 5).
-    dom(integers, 6).
-    dom(integers, 7).
-    dom(integers, 8).
-    dom(integers, 9).
-    dom(integers, 10).
+    %holds(static(instance(X, S), true)) :- holds(static(is_a(X), S)).
+    %holds(static(instance(X, S1), true)) :- holds(static(instance(X, S2), true)), holds(static(link(S2), S1)).
     `)
 }

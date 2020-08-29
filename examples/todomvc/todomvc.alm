@@ -8,7 +8,10 @@ sorts
     // they already exist (sort of - the semantics here are fuzzy,
     // and clarifying best practices for Flamingo in situations like
     // this is a big goal on the roadmap).
-    todos :: integers
+    // Also note: for now, Flamingo doesn't support unbounded integers -
+    // you must give a specific range. Unbounded integers is a big
+    // item on the roadmap!
+    todos :: 1..10
     todo_state :: { complete, incomplete }
     // There are three filter states: All, Active, and Completed.
     filters :: { all, active, completed }
