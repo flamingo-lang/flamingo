@@ -94,7 +94,7 @@ export type ArithmeticExpression = P.Node<"ArithmeticExpression", [Term, Arithme
 export type Literal = FunctionLiteral | ArithmeticExpression;
 export type Body = Literal[];
 export type Occurs = Variable;
-export type CausalLaw = P.Node<"CausalLaw", { occurs: Occurs, head: FunctionLiteral, body: Body }>
+export type CausalLaw = P.Node<"CausalLaw", { occurs: Occurs, head: FunctionLiteral[], body: Body }>
 export type SCHead = "false" | FunctionLiteral;
 export type StateConstraint = P.Node<"StateConstraint", { head: SCHead, body: Body }>;
 export type ExecutabilityCondition = P.Node<"ExecutabilityCondition", { occurs: Occurs, body: Body }>;
@@ -255,7 +255,7 @@ export const ALM = P.createLanguage({
     ).skip(P.optWhitespace),
     CausalLaw: r => sepByWhiteSpace(
         r.Occurs.skip(P.string("causes")),
-        r.FunctionLiteral,
+        commaSeparated(r.FunctionLiteral),
         P.string("if"),
         r.Body,
     ).node(Nodes.CausalLaw)

@@ -147,7 +147,7 @@ axioms
     occurs(A) causes text(Todo) = Text if
         instance(A, edit_todo),
         target(A) = Todo,
-        edit(A) = Text.
+        text(A) = Text.
     
     // Natural language
     // When the clear_completed action occurs,

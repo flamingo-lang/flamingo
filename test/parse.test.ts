@@ -112,7 +112,7 @@ describe("Parsing", () => {
         `);
 
         expect(results.value.occurs.name).to.equal(Nodes.Variable);
-        expect(results.value.head.name).to.equal(Nodes.FunctionLiteral);
+        expect(results.value.head[0].name).to.equal(Nodes.FunctionLiteral);
         expect(results.value.body.map((x: any) => x.name)).to.deep.equal([
             Nodes.FunctionLiteral,
             Nodes.FunctionLiteral,

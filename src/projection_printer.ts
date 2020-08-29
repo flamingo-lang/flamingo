@@ -2,6 +2,7 @@ import { Nodes, ModuleAST, Sorts, Statics, Fluents, FunctionDecl, StateConstrain
 import { unpad } from "./unpad";
 import { collectFunctionSignatures } from "./collectFunctionSignatures";
 import { range } from "rambda";
+import { type } from "os";
 
 
 export function printSortNames(sorts: Sorts) {
@@ -182,7 +183,9 @@ export function printStateConstraints(mod: ModuleAST): string {
     const state_constraints = mod.axioms?.filter(({ name }) => name === Nodes.StateConstraint)
         .map((axiom, i) => {
             const { value: { body, head } } = axiom as unknown as StateConstraint;
-            const varMap = body.filter(clause => clause.name === "FunctionLiteral")
+            const literals = body.filter(clause => clause.name === "FunctionLiteral")
+                .concat(head !== "false" ? [head] : []);
+            const varMap = literals
                 .reduce((prev, curr) => {
                     const vars = getVariablesFromFnLit(curr as FunctionLiteral);
                     const sig = fnSignatures[(curr as FunctionLiteral).value.fn];
@@ -213,7 +216,11 @@ export function printStateConstraints(mod: ModuleAST): string {
                     }
                 }
             }
-            const vars = Object.keys(varMap).join(", ");
+            
+            const vars = Object.keys(varMap).length ?
+                `(${Object.keys(varMap).join(", ")})`
+                : "";
+                
             const doms = []
             for (const key in varMap) {
                 doms.push(`dom(${varMap[key]}, ${key})`)
@@ -224,7 +231,7 @@ export function printStateConstraints(mod: ModuleAST): string {
                     const { fn, args, ret, negated } = head.value;
                     const ret_str = typeof ret === "object"
                         ? printTerm(ret) : "true";
-                    const args_str = args ? `(${args.map(printTerm).join(", ")})` : "";
+                    const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
                     const sign = negated ? "neg" : "pos";
                     return `${sign}_fluent(${fn}${args_str}, ${ret_str})`;
                 } else {
@@ -232,8 +239,10 @@ export function printStateConstraints(mod: ModuleAST): string {
                 }
             })();
 
-            const doms_str = doms.join(", ");
-            const axiom_str = `axiom${i + 1}(${vars})`;
+            const doms_str = doms.length ?
+                ` :- ${doms.join(", ")}`
+                : "";
+            const rule_name = `state_constraint${i + 1}${vars}`;
             const fnMap = getFnMap(mod);
             const body_rules = body.map(x => {
                 const cond = (() => {
@@ -242,7 +251,7 @@ export function printStateConstraints(mod: ModuleAST): string {
                             const { fn, args, ret, negated } = x.value;
                             const type = fnMap[x.value.fn];
                             const sign = negated ? "neg" : "pos";
-                            const args_str = args ? `(${args.map(printTerm).join(", ")})` : "";
+                            const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
                             const ret_str = typeof ret === "object"
                                 ? printTerm(ret) : "true";
                             return `${sign}_${type}(${fn}${args_str}, ${ret_str})`
@@ -259,12 +268,12 @@ export function printStateConstraints(mod: ModuleAST): string {
                             return `${relMap[rel]}(${printTerm(left)}, ${printTerm(right)})`;
                     }
                 })();
-                return `body(${axiom_str}, ${cond}) :- ${doms_str}.`
+                return `body(${rule_name}, ${cond})${doms_str}.`
             }).join("\n");
 
             return unpad(`
-            state_constraint(${axiom_str}) :- ${doms_str}.
-            head(${axiom_str}, ${head_rule}) :- ${doms_str}.
+            state_constraint(${rule_name})${doms_str}.
+            head(${rule_name}, ${head_rule})${doms_str}.
             
             ${body_rules}
             `);
@@ -277,10 +286,13 @@ export function printCausalLaws(mod: ModuleAST): string {
     const causal_laws = mod.axioms?.filter(({ name }) => name === Nodes.CausalLaw)
         .map((axiom, i) => {
             const { value: { occurs, body, head } } = axiom as unknown as CausalLaw;
-            const varMap = body.filter(clause => clause.name === "FunctionLiteral")
+            const literals = body.filter(clause => clause.name === "FunctionLiteral")
+                .concat(head);
+            const varMap = literals
                 .reduce((prev, curr) => {
                     const vars = getVariablesFromFnLit(curr as FunctionLiteral);
                     const sig = fnSignatures[(curr as FunctionLiteral).value.fn];
+
                     for (const a of vars?.args ?? []) {
                         for (const [v, n] of a) {
                             prev[v.value] = sig.args![n];
@@ -316,16 +328,8 @@ export function printCausalLaws(mod: ModuleAST): string {
                 doms.push(`dom(${varMap[key]}, ${key})`)
             };
 
-            const head_rule = (() => {
-                const { fn, args, ret, negated } = head.value;
-                const ret_str = typeof ret === "object"
-                    ? printTerm(ret) : "true";
-                const args_str = args ? `(${args.map(printTerm).join(", ")})` : "";
-                const sign = negated ? "neg" : "pos";
-                return `${sign}_fluent(${fn}${args_str}, ${ret_str})`;
-            })();
             const doms_str = doms.join(", ");
-            const axiom_str = `axiom${i + 1}(${vars})`;
+            const rule_name = `causal_law${i + 1}(${vars})`;
             const fnMap = getFnMap(mod);
             const body_rules = body.map(x => {
                 const cond = (() => {
@@ -334,7 +338,7 @@ export function printCausalLaws(mod: ModuleAST): string {
                             const { fn, args, ret, negated } = x.value;
                             const type = fnMap[x.value.fn];
                             const sign = negated ? "neg" : "pos";
-                            const args_str = args ? `(${args.map(printTerm).join(", ")})` : "";
+                            const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
                             const ret_str = typeof ret === "object"
                                 ? printTerm(ret) : "true";
                             return `${sign}_${type}(${fn}${args_str}, ${ret_str})`
@@ -351,12 +355,21 @@ export function printCausalLaws(mod: ModuleAST): string {
                             return `${relMap[rel]}(${printTerm(left)}, ${printTerm(right)})`;
                     }
                 })();
-                return `body(${axiom_str}, ${cond}) :- ${doms_str}.`
+                return `body(${rule_name}, ${cond}) :- ${doms_str}.`
             }).join("\n");
+
+            const head_rules = head.map(({value: { fn, args, ret, negated } }) => {
+                const ret_str = typeof ret === "object"
+                    ? printTerm(ret) : "true";
+                const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
+                const sign = negated ? "neg" : "pos";
+                return `head(causal_law${i + 1}(${vars}), ${sign}_fluent(${fn}${args_str}, ${ret_str})) :- ${doms_str}.`;
+            }).join("\n");
+
             return unpad(`
-            dlaw(axiom${i + 1}(${vars})) :- ${doms_str}.
-            action(axiom${i + 1}(${vars}), ${occurs.value}) :- ${doms_str}.
-            head(axiom${i + 1}(${vars}), ${head_rule}) :- ${doms_str}.
+            dlaw(causal_law${i + 1}(${vars})) :- ${doms_str}.
+            action(causal_law${i + 1}(${vars}), ${occurs.value}) :- ${doms_str}.
+            ${head_rules}
 
             ${body_rules}
             `);
@@ -368,7 +381,7 @@ export function printStaticAssignments(mod: ModuleAST): string {
     return mod.axioms?.filter(x => x.name === "Fact" && x.value.value.negated === false)
         .map((axiom) => {
             const { value: { value: { fn, ret, args } } } = axiom as Fact;
-            const args_str = args ? `(${args.map(printTerm).join(", ")})` : "";
+            const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
             const ret_str = ret === true ? "true" : printTerm(ret);
             return `holds(static(${fn}${args_str}, ${ret_str})).`
         }).join("\n") ?? ""
@@ -378,9 +391,9 @@ export function printInitially(mod: ModuleAST): string {
     return mod.initially?.filter(x => x.name === "Fact" && x.value.value.negated === false)
     .map((fact) => {
         const { value: { value: { fn, ret, args } } } = fact;
-        const args_str = args ? `(${args.map(printTerm).join(", ")})` : "";
+        const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
         const ret_str = ret === true ? "true" : printTerm(ret);
-        return `holds(${fn}${args}, ${ret_str}, 0).`
+        return `holds(${fn}${args_str}, ${ret_str}, 0).`
     }).join("\n") ?? "";
 }
 
@@ -389,6 +402,15 @@ export function printModule(mod: ModuleAST): string {
     :-use_module(library(lists)).
     :-dynamic(n/1).
     :-dynamic(occurs/2).
+    :-discontiguous(holds/3).
+    :-discontiguous(holds/1).
+    :-discontiguous(not_holds/3).
+    :-discontiguous(dom/2).
+    :-discontiguous(body/2).
+    :-discontiguous(head/2).
+    :-discontiguous(dlaw/1).
+    :-discontiguous(action/2).
+    
 
     ${mod.sorts ? printSortNames(mod.sorts) : ""}
     
@@ -480,16 +502,13 @@ export function printModule(mod: ModuleAST): string {
         n(N),
         T < N.
 
-    dom(todos, X) :- holds(static(link(special_todos), todos)), dom(special_todos, X).
+    dom(S1, X) :- holds(static(link(S2), S1)), dom(S2, X).
 
     holds(static(link(booleans), universe)).
     dom(booleans, true). dom(booleans, false).
 
     holds(static(link(action), universe)).
 
-    %holds(static(is_a(X), S)) :- dom(S, X).
-
-    %holds(static(instance(X, S), true)) :- holds(static(is_a(X), S)).
-    %holds(static(instance(X, S1), true)) :- holds(static(instance(X, S2), true)), holds(static(link(S2), S1)).
+    holds(static(instance(X, S), true)) :- dom(S, X).
     `)
 }

@@ -128,25 +128,25 @@ describe("Printing Projection", () => {
              `);
 
             expect(printStateConstraints(mod).trim()).to.equal(unpad(`
-            state_constraint(axiom1(A, B, X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            head(axiom1(A, B, X, Y), pos_fluent(foo(A, B), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            state_constraint(state_constraint1(A, B, X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            head(state_constraint1(A, B, X, Y), pos_fluent(foo(A, B), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
 
-            body(axiom1(A, B, X, Y), pos_fluent(bar(A, B), b1)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(A, B, X, Y), neg_fluent(foo(A, B), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(A, B, X, Y), pos_static(s(X), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(A, B, X, Y), neg_static(s(Y), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(A, B, X, Y), gt(X, Y * Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(A, B, X, Y), lt(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(A, B, X, Y), gte(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(A, B, X, Y), lte(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(A, B, X, Y), eq(X, Y + 1)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(A, B, X, Y), neq(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), pos_fluent(bar(A, B), b1)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), neg_fluent(foo(A, B), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), pos_static(s(X), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), neg_static(s(Y), true)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), gt(X, Y * Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), lt(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), gte(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), lte(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), eq(X, Y + 1)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(state_constraint1(A, B, X, Y), neq(X, Y)) :- dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
             
 
-            state_constraint(axiom2(A, B)) :- dom(a, A), dom(b, B).
-            head(axiom2(A, B), pos_fluent(bar(A, B), b2)) :- dom(a, A), dom(b, B).
+            state_constraint(state_constraint2(A, B)) :- dom(a, A), dom(b, B).
+            head(state_constraint2(A, B), pos_fluent(bar(A, B), b2)) :- dom(a, A), dom(b, B).
 
-            body(axiom2(A, B), neg_fluent(bam(A), B)) :- dom(a, A), dom(b, B).
+            body(state_constraint2(A, B), neg_fluent(bam(A), B)) :- dom(a, A), dom(b, B).
             `).trim());
         });
 
@@ -181,21 +181,21 @@ describe("Printing Projection", () => {
              `);
 
             expect(printCausalLaws(mod).trim()).to.equal(unpad(`
-            dlaw(axiom1(W, A, B, X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            action(axiom1(W, A, B, X, Y), W) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            head(axiom1(W, A, B, X, Y), pos_fluent(foo(A, B), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            dlaw(causal_law1(W, A, B, X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            action(causal_law1(W, A, B, X, Y), W) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            head(causal_law1(W, A, B, X, Y), pos_fluent(foo(A, B), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
 
-            body(axiom1(W, A, B, X, Y), pos_static(instance(W, act), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), pos_fluent(bar(A, B), b1)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), neg_fluent(foo(A, B), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), pos_static(s(X), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), neg_static(s(Y), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), gt(X, Y * Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), lt(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), gte(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), lte(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), eq(X, Y + 1)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
-            body(axiom1(W, A, B, X, Y), neq(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), pos_static(instance(W, act), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), pos_fluent(bar(A, B), b1)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), neg_fluent(foo(A, B), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), pos_static(s(X), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), neg_static(s(Y), true)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), gt(X, Y * Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), lt(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), gte(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), lte(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), eq(X, Y + 1)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
+            body(causal_law1(W, A, B, X, Y), neq(X, Y)) :- dom(action, W), dom(a, A), dom(b, B), dom(integers, X), dom(integers, Y).
             `).trim());
         });
     });
