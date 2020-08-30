@@ -1,4 +1,4 @@
-import { create } from "tau-prolog";
+import Pl from "../src/tau-prolog";
 import { readFileSync } from "fs";
 import { printModule } from "../src/projection_printer";
 import { parseModule } from "../src/parse";
@@ -8,7 +8,7 @@ import { writeSync } from "clipboardy";
 describe("Tau Parsing", () => {
     it("Should work on the static file", () => {
         const logic = readFileSync("./test/prolog-projection.lp", { encoding: "utf-8" });
-        const s = create();
+        const s = Pl.create();
         const parseResult = s.consult(logic);
         if (parseResult !== true) {
             throw new Error(parseResult.toString());
@@ -110,7 +110,7 @@ describe("Tau Parsing", () => {
         const logic = printModule(alm);
         writeSync(logic);
         writeFileSync("./prolog-test.lp", logic);
-        const s = create();
+        const s = Pl.create();
         const parseResult = s.consult(logic);
         if (parseResult !== true) {
             throw new Error(parseResult.toString());

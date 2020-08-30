@@ -1,7 +1,11 @@
 import { Nodes, ModuleAST, Sorts, Statics, Fluents, FunctionDecl, StateConstraint, FunctionLiteral, Variable, ArithmeticExpression, ArithmeticTerm, Term, BasicArithmeticTerm, BasicTerm, CausalLaw, Fact, ALM } from "./parse";
 import { unpad } from "./unpad";
 import { collectFunctionSignatures } from "./collectFunctionSignatures";
-import { range } from "rambda";
+
+function range(start: number, end: number) {
+    const size = end - start;
+    return [...Array(size).keys()].map(i => i + start);
+}
 
 
 export function printSortNames(sorts: Sorts) {

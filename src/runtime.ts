@@ -1,16 +1,13 @@
-import React, { createContext, FunctionComponent, useContext } from "react";
-import { create, format_answer } from "tau-prolog";
-import PLimit from "p-limit";
-import { Subject } from "rxjs";
-import { map, mergeMap } from "rxjs/operators";
-import { useObservable } from "rxjs-hooks";
+import { pLimit} from "./pLimit";
 import { parseModule } from "./parse";
 import { printModule, printQuery } from "./projection_printer";
-import * as R from "rambda";
+import Pl from "./tau-prolog";
+import { load } from "./tau-list";
+load(Pl);
 
-const limit = PLimit(1);
+const limit = pLimit(1);
 
-export type FlamingoSession = { runtime: ReturnType<typeof create>; n: number };
+export type FlamingoSession = { runtime: ReturnType<typeof Pl.create>; n: number };
 
 export type FlamingoValue = string | boolean | number;
 
@@ -20,25 +17,10 @@ export type FlamingoQueryResult = Record<
 >;
 
 export const createSession = (logic: string): FlamingoSession => {
-  const s = create();
+  const s = Pl.create();
   const translatedModule = printModule(parseModule(logic));
   s.consult(translatedModule);
   return { runtime: s, n: 0 };
-};
-
-const SessionContext = createContext<FlamingoSession>(
-  (undefined as unknown) as FlamingoSession
-);
-
-export const Provider: FunctionComponent<{ session: FlamingoSession }> = ({
-  session,
-  children,
-}) => {
-  return (
-    <SessionContext.Provider value={session}>
-      {children}
-    </SessionContext.Provider>
-  );
 };
 
 export const runQuery = (
@@ -53,7 +35,7 @@ export const runQuery = (
         let answers: [string, string][] = [];
         session.runtime.answers(
           (ans) => {
-            const fmt = format_answer(ans).slice(0, -1);
+            const fmt = Pl.format_answer(ans).slice(0, -1);
             if (fmt !== "false") {
               const subs = fmt
                 .split(",")
@@ -97,16 +79,6 @@ export const runQuery = (
   );
 };
 
-const actionSubject = new Subject();
-
-const queryMap: Record<string, Subject<FlamingoQueryResult>> = {};
-
-export const useQuery = (query: string): FlamingoQueryResult | null => {
-  const session = useContext(SessionContext);
-  const obs = actionSubject.pipe(mergeMap(() => runQuery(session, query)));
-  return useObservable(() => obs);
-};
-
 export const dispatch = (
   session: FlamingoSession,
   action: string,
@@ -114,12 +86,29 @@ export const dispatch = (
 ): Promise<void> => {
   return limit(async () => {
     const name = `${action}${session.n}`;
-    const attrs = R.values(
-      R.map(
-        (v: any, k: any) => `assertz(holds(static(${k}(${name}), ${v}))).`,
-        attributes
-      )
-    ).join("\n");
+    // const attrs = Object.keys(attributes);
+    const attrs = (() => {
+      const ret: string[] = [];
+      for (const k in attributes) {
+        if (Object.prototype.hasOwnProperty.call(attributes, k)) {
+          const v = attributes[k];
+          ret.push(`assertz(holds(static(${k}(${name}), ${v}))).`);
+        }
+      }
+      return ret.join("\n");
+    })(); 
+    
+    // attrs.reduce((prev, curr) => {
+    //   const k = curr;
+    //   const v = attributes[k];
+    //   return [...prev, `assertz(holds(static(${k}(${name}), ${v}))).`];
+    // }, []).join("\n");
+    // const attrs = R.values(
+    //   R.map(
+    //     (v: any, k: any) => `assertz(holds(static(${k}(${name}), ${v}))).`,
+    //     attributes
+    //   )
+    // ).join("\n");
     const assertz = `
     assertz(dom(${action}, ${name})).
     ${attrs}
@@ -139,7 +128,7 @@ export const dispatch = (
       let answers: [string, string][] = [];
       session.runtime.answers(
         (ans) => {
-          const fmt = format_answer(ans).slice(0, -1);
+          const fmt = Pl.format_answer(ans).slice(0, -1);
           if (fmt !== "false") {
             answers.push(
               fmt.split(",").map((x) => x.trim().slice(5)) as [string, string]
@@ -162,13 +151,5 @@ export const dispatch = (
       session.runtime.query(query2);
       session.runtime.answers(() => {}, 100000, res);
     });
-
-    actionSubject.next();
   });
-};
-
-export const useDispatch = () => {
-  const session = useContext(SessionContext);
-  return (action: string, attributes?: Record<string, FlamingoValue>) =>
-    dispatch(session, action, attributes ?? {});
 };

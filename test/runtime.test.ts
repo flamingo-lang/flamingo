@@ -1,12 +1,6 @@
-import Tau from "tau-prolog";
-import { load } from "../src/list";
-import { runQuery, FlamingoSession, createSession, dispatch } from "../src/runtime";
-import { parseModule } from "../src/parse";
+import Tau from "../src/tau-prolog";
+import { runQuery, createSession, dispatch } from "../src/runtime";
 import { expect } from "chai";
-import { printModule } from "../src/projection_printer";
-import { writeSync } from "clipboardy";
-
-load(Tau);
 
 const logic = `
         module todomvc
