@@ -1,4 +1,4 @@
-import { Nodes, ModuleAST, Sorts, Statics, Fluents, FunctionDecl, StateConstraint, FunctionLiteral, Variable, ArithmeticExpression, ArithmeticTerm, Term, BasicArithmeticTerm, BasicTerm, CausalLaw, Fact } from "./parse";
+import { Nodes, ModuleAST, Sorts, Statics, Fluents, FunctionDecl, StateConstraint, FunctionLiteral, Variable, ArithmeticExpression, ArithmeticTerm, Term, BasicArithmeticTerm, BasicTerm, CausalLaw, Fact, ALM } from "./parse";
 import { unpad } from "./unpad";
 import { collectFunctionSignatures } from "./collectFunctionSignatures";
 import { range } from "rambda";
@@ -11,9 +11,9 @@ export function printSortNames(sorts: Sorts) {
             second.map((secondSortName) => {
                 if (Array.isArray(secondSortName)) {
                     const doms = range(secondSortName[0], secondSortName[1] + 1)
-                   .map(x => `dom(${firstSortName}, ${x}).`).join(" ") 
-                   const is_a = range(secondSortName[0], secondSortName[1] + 1)
-                   .map(x => `holds(static(is_a(${x}), ${firstSortName})).`).join(" ") 
+                        .map(x => `dom(${firstSortName}, ${x}).`).join(" ")
+                    const is_a = range(secondSortName[0], secondSortName[1] + 1)
+                        .map(x => `holds(static(is_a(${x}), ${firstSortName})).`).join(" ")
                     // Range case
                     return unpad(`
                         holds(static(link(${firstSortName}), integers)).
@@ -30,7 +30,7 @@ export function printSortNames(sorts: Sorts) {
                     const arr = Array.from(secondSortName);
                     const doms = arr.map(({ value }) =>
                         `dom(${firstSortName}, ${value}).`).join(" ");
-                    const is_a = arr.map(x => `holds(static(is_a(${x.value}), ${firstSortName})).`).join(" ") 
+                    const is_a = arr.map(x => `holds(static(is_a(${x.value}), ${firstSortName})).`).join(" ")
                     return `${doms}\n${is_a}`
 
                 }
@@ -176,10 +176,11 @@ const printBasicTerm = (term: BasicTerm) =>
         ? `${term.value.value}`
         : printBasicArithmeticTerm(term.value);
 
-const printTerm = (term: Term) =>
-    (term.name === "ArithmeticTerm")
-        ? printArithmeticTerm(term)
-        : printBasicTerm(term);
+const printTerm = (term: Term | true) =>
+    term === true ? "true" :
+        (term.name === "ArithmeticTerm")
+            ? printArithmeticTerm(term)
+            : printBasicTerm(term);
 
 export function printStateConstraints(mod: ModuleAST): string {
     const fnSignatures = collectFunctionSignatures(mod);
@@ -219,11 +220,11 @@ export function printStateConstraints(mod: ModuleAST): string {
                     }
                 }
             }
-            
+
             const vars = Object.keys(varMap).length ?
                 `(${Object.keys(varMap).join(", ")})`
                 : "";
-                
+
             const doms = []
             for (const key in varMap) {
                 doms.push(`dom(${varMap[key]}, ${key})`)
@@ -232,11 +233,9 @@ export function printStateConstraints(mod: ModuleAST): string {
             const head_rule = (() => {
                 if (head !== "false") {
                     const { fn, args, ret, negated } = head.value;
-                    const ret_str = typeof ret === "object"
-                        ? printTerm(ret) : "true";
                     const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
                     const sign = negated ? "neg" : "pos";
-                    return `${sign}_fluent(${fn}${args_str}, ${ret_str})`;
+                    return `${sign}_fluent(${fn}${args_str}, ${printTerm(ret)})`;
                 } else {
                     return ""
                 }
@@ -255,9 +254,7 @@ export function printStateConstraints(mod: ModuleAST): string {
                             const type = fnMap[x.value.fn];
                             const sign = negated ? "neg" : "pos";
                             const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
-                            const ret_str = typeof ret === "object"
-                                ? printTerm(ret) : "true";
-                            return `${sign}_${type}(${fn}${args_str}, ${ret_str})`
+                            return `${sign}_${type}(${fn}${args_str}, ${printTerm(ret)})`
                         case "ArithmeticExpression":
                             const [left, rel, right] = x.value;
                             const relMap = {
@@ -339,15 +336,10 @@ export function printCausalLaws(mod: ModuleAST): string {
                     switch (x.name) {
                         case "FunctionLiteral":
                             const { fn, args, ret, negated } = x.value;
-                            if (fn === "filter") {
-                                console.log(fnMap);
-                            }
                             const type = fnMap[x.value.fn];
                             const sign = negated ? "neg" : "pos";
                             const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
-                            const ret_str = typeof ret === "object"
-                                ? printTerm(ret) : "true";
-                            return `${sign}_${type}(${fn}${args_str}, ${ret_str})`
+                            return `${sign}_${type}(${fn}${args_str}, ${printTerm(ret)})`
                         case "ArithmeticExpression":
                             const [left, rel, right] = x.value;
                             const relMap = {
@@ -364,12 +356,10 @@ export function printCausalLaws(mod: ModuleAST): string {
                 return `body(${rule_name}, ${cond}) :- ${doms_str}.`
             }).join("\n");
 
-            const head_rules = head.map(({value: { fn, args, ret, negated } }) => {
-                const ret_str = typeof ret === "object"
-                    ? printTerm(ret) : "true";
+            const head_rules = head.map(({ value: { fn, args, ret, negated } }) => {
                 const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
                 const sign = negated ? "neg" : "pos";
-                return `head(causal_law${i + 1}(${vars}), ${sign}_fluent(${fn}${args_str}, ${ret_str})) :- ${doms_str}.`;
+                return `head(causal_law${i + 1}(${vars}), ${sign}_fluent(${fn}${args_str}, ${printTerm(ret)})) :- ${doms_str}.`;
             }).join("\n");
 
             return unpad(`
@@ -388,19 +378,17 @@ export function printStaticAssignments(mod: ModuleAST): string {
         .map((axiom) => {
             const { value: { value: { fn, ret, args } } } = axiom as Fact;
             const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
-            const ret_str = ret === true ? "true" : printTerm(ret);
-            return `holds(static(${fn}${args_str}, ${ret_str})).`
+            return `holds(static(${fn}${args_str}, ${printTerm(ret)})).`
         }).join("\n") ?? ""
 }
 
 export function printInitially(mod: ModuleAST): string {
     return mod.initially?.filter(x => x.name === "Fact" && x.value.value.negated === false)
-    .map((fact) => {
-        const { value: { value: { fn, ret, args } } } = fact;
-        const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
-        const ret_str = ret === true ? "true" : printTerm(ret);
-        return `holds(${fn}${args_str}, ${ret_str}, 0).`
-    }).join("\n") ?? "";
+        .map((fact) => {
+            const { value: { value: { fn, ret, args } } } = fact;
+            const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
+            return `holds(${fn}${args_str}, ${printTerm(ret)}, 0).`
+        }).join("\n") ?? "";
 }
 
 export function printModule(mod: ModuleAST): string {
@@ -443,7 +431,6 @@ export function printModule(mod: ModuleAST): string {
     count(X, E, N) :- findall(X, E, L), length(L, N).
 
     body_satisfied(R,T) :-
-        time(T),
         count(F, (body(R,pos_fluent(F,V)), fluent(_,F,V)), FPB),
         count( F, (body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, T) ), FPB),
 
@@ -521,6 +508,15 @@ export function printModule(mod: ModuleAST): string {
 
     holds(static(instance(X, S), true)) :- dom(S, X).
     `)
+}
+
+export function printQuery(n: number, query: string) {
+    const literals = ALM.Query.tryParse(query) as FunctionLiteral[];
+    const holds = literals.map(({ value: { fn, args, ret } }) => {
+        const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
+        return `holds(${fn}${args_str}, ${printTerm(ret)}, ${n})`
+    }).join(", ");
+    return `${holds}.`
 }
 
 /*

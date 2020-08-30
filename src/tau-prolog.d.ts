@@ -1,3 +1,4 @@
+declare module "tau-prolog/modules/list";
 declare module 'tau-prolog' {
     namespace tau {
       namespace type {

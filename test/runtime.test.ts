@@ -1,22 +1,14 @@
-import { create } from "tau-prolog";
-import { readFileSync } from "fs";
-import { printModule } from "../src/projection_printer";
+import Tau from "tau-prolog";
+import { load } from "../src/list";
+import { runQuery, FlamingoSession, createSession, dispatch } from "../src/runtime";
 import { parseModule } from "../src/parse";
-import { writeFileSync } from "fs";
+import { expect } from "chai";
+import { printModule } from "../src/projection_printer";
 import { writeSync } from "clipboardy";
 
-describe("Tau Parsing", () => {
-    it("Should work on the static file", () => {
-        const logic = readFileSync("./test/prolog-projection.lp", { encoding: "utf-8" });
-        const s = create();
-        const parseResult = s.consult(logic);
-        if (parseResult !== true) {
-            throw new Error(parseResult.toString());
-        }
-    });
+load(Tau);
 
-    it("Should print todomvc", () => {
-        const alm = parseModule(`
+const logic = `
         module todomvc
         sorts
             todos :: 1..3
@@ -104,18 +96,33 @@ describe("Tau Parsing", () => {
  
         initially
             next_todo = 1.
-            active_filter = all.
-        `);
+            active_filter = all.`;
+            
+describe("Runtime", () => {
+    it("Query", async () => {
+        const session = createSession(logic);
+        
+        const query = "visible(Todo), next_todo = Next."
+        expect((await runQuery(session, query)).Todo).to.have.members([1, 2, 3]);
+        expect((await runQuery(session, query)).Next).to.equal(1);
+    });
 
-        const logic = printModule(alm);
-        writeSync(logic);
-        writeFileSync("./prolog-test.lp", logic);
-        const s = create();
-        const parseResult = s.consult(logic);
-        if (parseResult !== true) {
-            throw new Error(parseResult.toString());
-        }
+    it("Querying concurrently works", async () => {
+        const session = createSession(logic);
+        return Promise.all([
+            runQuery(session, "visible(Todo).")
+                .then(x => expect(x.Todo).to.have.members([1, 2, 3])),
+            runQuery(session, "next_todo = Next.")
+                .then(x => expect(x.Next).to.equal(1))
+        ]);
+    });
+
+    it("Dispatch", async () => {
+        const session = createSession(logic);
+        await dispatch(session, "set_active_filter", { filter: "completed" });
+        const result1 = await runQuery(session, "active_filter = Active.");
+        expect(result1.Active).to.equal("completed");
+        const result2 = await runQuery(session, "visible(Todo).");
+        expect(result2.Todo).to.be.undefined;
     });
 });
-            // visible(Todo) if completed(Todo), active_filter = completed.
-            // visible(Todo) if -completed(Todo), active_filter = active.

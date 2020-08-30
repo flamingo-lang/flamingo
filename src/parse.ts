@@ -303,6 +303,7 @@ export const ALM = P.createLanguage({
         .map(([moduleName, [sorts, statics, fluents, axioms, initially]]) => ({
             moduleName, sorts, statics, fluents, axioms, initially
         })),
+    Query: r => commaSeparated(r.FunctionLiteral).skip(P.string(".")),
 });
 
 export function parseModule(mod: string): ModuleAST {

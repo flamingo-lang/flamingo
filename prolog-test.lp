@@ -190,7 +190,6 @@ holds(active_filter, all, 0).
 count(X, E, N) :- findall(X, E, L), length(L, N).
 
 body_satisfied(R,T) :-
-    time(T),
     count(F, (body(R,pos_fluent(F,V)), fluent(_,F,V)), FPB),
     count( F, (body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, T) ), FPB),
 
