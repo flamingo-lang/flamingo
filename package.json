@@ -1,6 +1,6 @@
 {
   "name": "flamingo-lang",
-  "version": "0.1.0-alpha3",
+  "version": "0.1.0-alpha4",
   "main": "out/src/index.js",
   "types": "out/src/index.d.ts",
   "author": "Daniel Hines <d4hines@gmail.com>",
