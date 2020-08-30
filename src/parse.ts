@@ -29,46 +29,6 @@ export type Boolean = P.Node<"Boolean", boolean>;
 export type Identifier = P.Node<"Identifier", string>;
 export type Variable = P.Node<"Variable", string>;
 export type BasicArithmeticTerm = Variable | Identifier | number;
-
-// function isVariable(x: any): x is Variable {
-//     return typeof x === "object" && x.name === Nodes.Variable;
-// }
-
-// function getVariables(x: any): Variable[] {
-//     if (isVariable(x)) {
-//         return [x];
-//     } if(typeof x === "object")  {
-//         return Object.values(x).reduce((prev: Variable[], curr) => {
-//             if (isVariable(curr)) {
-//                 return [...prev, curr];
-//             } else {
-//                 return [];
-//             }
-//         }, []);
-//     } else {
-//         return [];
-//     }
-// }
-
-// function getVarSortsFromFunctionLit(mod: ModuleAST, {value: {fn, args, ret}}: FunctionLiteral): ([string, string])[] {
-//     const attrs = mod.sorts.value.flatMap(({ first, attributes }) =>
-//         first.map(({ value }) => [value, ...attributes?.map(attr => {
-
-//         }) ?? []]));
-//     ) ?? [])
-//     const sorts = 
-//     const foo = args.flatMap((arg, i) => {
-//         if (arg.name === "ArithmeticTerm") {
-//             const variable = arg.value.find(isVariable);
-//             if (variable) { 
-//             }
-//             return [, "integer"]
-//         }
-//         arg.name
-//     });
-// }
-
-
 export type BasicTerm = P.Node<"BasicTerm", BasicArithmeticTerm | Boolean>;
 export type ArithmeticOp = "+" | "-" | "*" | "/";
 export type ArithmeticTerm = P.Node<"ArithmeticTerm", [BasicArithmeticTerm, ArithmeticOp, BasicArithmeticTerm]>;
