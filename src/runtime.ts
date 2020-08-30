@@ -74,58 +74,30 @@ export const dispatch = (
       return ret.join("\n");
     })();
 
-    // attrs.reduce((prev, curr) => {
-    //   const k = curr;
-    //   const v = attributes[k];
-    //   return [...prev, `assertz(holds(static(${k}(${name}), ${v}))).`];
-    // }, []).join("\n");
-    // const attrs = R.values(
-    //   R.map(
-    //     (v: any, k: any) => `assertz(holds(static(${k}(${name}), ${v}))).`,
-    //     attributes
-    //   )
-    // ).join("\n");
     const assertz = `
     assertz(dom(${action}, ${name})).
     ${attrs}
     assertz(occurs(${name}, ${session.n})).`;
 
-    await new Promise((res) => {
-      session.runtime.query(assertz),
-        session.runtime.answers(() => { }, 10000, res);
-    });
+    await session.runtime.query_all(assertz);
 
-    const query1 = `holds_next(F1,V1,${session.n}). nholds_next(F2, V2, ${session.n}). holds_inertia(F3, V3, ${session.n}). nholds_inertia(F4, V4, ${session.n}).`;
+    const queries = [
+      `holds_next(F,V,${session.n}).`,
+      `nholds_next(F, V, ${session.n}).`,
+      `holds_inertia(F, V, ${session.n}).`,
+      `nholds_inertia(F, V, ${session.n}).`
+    ];
 
     session.n++;
-
-    const results1: [string, string][] = await new Promise((res) => {
-      session.runtime.query(query1);
-      let answers: [string, string][] = [];
-      session.runtime.answers(
-        (ans) => {
-          const fmt = Pl.format_answer(ans).slice(0, -1);
-          if (fmt !== "false") {
-            answers.push(
-              fmt.split(",").map((x) => x.trim().slice(5)) as [string, string]
-            );
-          }
-        },
-        10000,
-        () => res(answers)
-      );
-    });
-
-    const query2 = results1
-      .map((x) => {
-        const [f, v] = x;
-        return `assertz(holds(${f}, ${v}, ${session.n})).`;
-      })
-      .join(" ");
-
-    await new Promise((res) => {
-      session.runtime.query(query2);
-      session.runtime.answers(() => { }, 100000, res);
-    });
+    
+    const results = [];
+    for (const q of queries) {
+      for (const ans of await session.runtime.query_all(q)) {
+        if ("F" in ans) {
+          results.push(`assertz(holds(${ans.F}, ${ans.V}, ${session.n})).`);
+        }
+      }
+    }
+    await session.runtime.query_all(results.join(" "));
   });
 };
