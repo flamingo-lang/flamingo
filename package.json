@@ -1,6 +1,6 @@
 {
   "name": "flamingo-lang",
-  "version": "0.1.0-alpha1",
+  "version": "0.1.0-alpha2",
   "main": "out/index.js",
   "author": "Daniel Hines <d4hines@gmail.com>",
   "license": "MIT",
