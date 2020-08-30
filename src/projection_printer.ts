@@ -9,10 +9,10 @@ function range(start: number, end: number) {
 
 
 export function printSortNames(sorts: Sorts) {
-    return sorts.value.map(({ first, second }) =>
-        first.map(({ value: firstSortName }) => [
+    return sorts.value.map(({ first, second }: any) =>
+        first.map(({ value: firstSortName }: any) => [
             `sort(${firstSortName}).`,
-            second.map((secondSortName) => {
+            second.map((secondSortName: any) => {
                 if (Array.isArray(secondSortName)) {
                     const doms = range(secondSortName[0], secondSortName[1] + 1)
                         .map((x: any) => `dom(${firstSortName}, ${x}).`).join(" ")
@@ -32,9 +32,9 @@ export function printSortNames(sorts: Sorts) {
                 } else {
                     // Set literal case
                     const arr = Array.from(secondSortName);
-                    const doms = arr.map(({ value }) =>
+                    const doms = arr.map(({ value }: any) =>
                         `dom(${firstSortName}, ${value}).`).join(" ");
-                    const is_a = arr.map(x => `holds(static(is_a(${x.value}), ${firstSortName})).`).join(" ")
+                    const is_a = arr.map((x: any) => `holds(static(is_a(${x.value}), ${firstSortName})).`).join(" ")
                     return `${doms}\n${is_a}`
 
                 }
@@ -43,11 +43,11 @@ export function printSortNames(sorts: Sorts) {
 }
 
 export function printAttributes({ value: sorts }: Sorts) {
-    return sorts.map(({ first, attributes }) =>
-        first.map(({ value: firstSortName }) =>
-            attributes === null ? "" : attributes.map(({ value: { ident: { value: ident }, args, ret } }) => {
+    return sorts.map(({ first, attributes }: any) =>
+        first.map(({ value: firstSortName }: any) =>
+            attributes === null ? "" : attributes.map(({ value: { ident: { value: ident }, args, ret } }: any) => {
                 if (args) {
-                    const sort_var_combos = [firstSortName, ...args.map(x => x.value)]
+                    const sort_var_combos = [firstSortName, ...args.map((x: { value: any; }) => x.value)]
                         .map((ident, i) => [ident, `S${i}`]);
                     const vars = sort_var_combos.map(([_, x]) => x);
                     const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
@@ -65,12 +65,12 @@ export function printAttributes({ value: sorts }: Sorts) {
 }
 
 export function printStatics({ value: statics }: Statics) {
-    return statics.map(({ value: { ident: { value: ident }, args, ret } }) => {
+    return statics.map(({ value: { ident: { value: ident }, args, ret } }: any) => {
         if (args) {
-            const sort_var_combos = args.map(x => x.value)
-                .map((ident, i) => [ident, `S${i}`]);
-            const vars = sort_var_combos.map(([_, x]) => x);
-            const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
+            const sort_var_combos = args.map((x: { value: any; }) => x.value)
+                .map((ident: any, i: any) => [ident, `S${i}`]);
+            const vars = sort_var_combos.map(([_, x]: any) => x);
+            const doms = sort_var_combos.map(([s, x]: any) => `dom(${s}, ${x})`).join(", ");
             return unpad(`
                 static(${ident}(${vars.join(", ")}), Ret) :- ${doms}, dom(${ret.value}, Ret).
                 `);
@@ -86,10 +86,10 @@ export function printFluents({ basic, defined }: Fluents) {
     const fluentPrinter = (basicOrDefined: string) =>
         ({ value: { ident: { value: ident }, args, ret } }: FunctionDecl) => {
             if (args) {
-                const sort_var_combos = args.map(x => x.value)
-                    .map((ident, i) => [ident, `S${i}`]);
-                const vars = sort_var_combos.map(([_, x]) => x);
-                const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
+                const sort_var_combos = args.map((x: { value: any; }) => x.value)
+                    .map((ident: any, i: any) => [ident, `S${i}`]);
+                const vars = sort_var_combos.map(([_, x]: any) => x);
+                const doms = sort_var_combos.map(([s, x]: any) => `dom(${s}, ${x})`).join(", ");
                 return unpad(`
                     fluent(${basicOrDefined}, ${ident}(${vars.join(", ")}), Ret) :- ${doms}, dom(${ret.value}, Ret).
                     `);
@@ -121,10 +121,10 @@ function getVariablesFromFnLit(fnLit: FunctionLiteral): { args?: [Variable, numb
                 return ret.value.filter(isVariable);
             }
         })(),
-        args: args?.map((arg, i) => {
+        args: args?.map((arg: any, i: any) => {
             if (Array.isArray(arg.value)) {
                 return arg.value.filter(isVariable)
-                    .map(t => [t, i]);
+                    .map((t: any) => [t, i]);
             } else if (isVariable(arg.value)) {
                 return [[arg.value, i]]
             } else {
@@ -147,7 +147,7 @@ function getVariablesFromTerm(term: Term) {
 function getFnMap(mod: ModuleAST): Record<string, "static" | "fluent"> {
     const statics = {} as Record<string, "static">;
     const stats = [...(mod.statics?.value ?? []),
-    ...(mod.sorts?.value.filter(x => x.attributes).flatMap(x => x.attributes!) ?? [])
+    ...(mod.sorts?.value.filter((x: { attributes: any; }) => x.attributes).flatMap((x: { attributes: any; }) => x.attributes!) ?? [])
     ];
     for (const x of stats) {
         statics[x.value.ident.value] = "static";
@@ -191,10 +191,10 @@ export function printStateConstraints(mod: ModuleAST): string {
     const state_constraints = mod.axioms?.filter(({ name }) => name === Nodes.StateConstraint)
         .map((axiom, i) => {
             const { value: { body, head } } = axiom as unknown as StateConstraint;
-            const literals = body.filter(clause => clause.name === "FunctionLiteral")
+            const literals = body.filter((clause: { name: string; }) => clause.name === "FunctionLiteral")
                 .concat(head !== "false" ? [head] : []);
             const varMap = literals
-                .reduce((prev, curr) => {
+                .reduce((prev: { [x: string]: string; }, curr: any) => {
                     const vars = getVariablesFromFnLit(curr as FunctionLiteral);
                     const sig = fnSignatures[(curr as FunctionLiteral).value.fn];
                     for (const a of vars?.args ?? []) {
@@ -210,7 +210,7 @@ export function printStateConstraints(mod: ModuleAST): string {
                     return prev;
                 }, {} as Record<string, string>);
 
-            for (const clause of body.filter(clause => clause.name === "ArithmeticExpression")) {
+            for (const clause of body.filter((clause: { name: string; }) => clause.name === "ArithmeticExpression")) {
                 const { value: [left, , right] } = clause as ArithmeticExpression;
 
                 const vars = getVariablesFromTerm(left).concat(getVariablesFromTerm(right));
@@ -250,12 +250,12 @@ export function printStateConstraints(mod: ModuleAST): string {
                 : "";
             const rule_name = `state_constraint${i + 1}${vars}`;
             const fnMap = getFnMap(mod);
-            const body_rules = body.map(x => {
+            const body_rules = body.map((x: any) => {
                 const cond = (() => {
                     switch (x.name) {
                         case "FunctionLiteral":
-                            const { fn, args, ret, negated } = x.value;
-                            const type = fnMap[x.value.fn];
+                            const { fn, args, ret, negated } = x.value as any;
+                            const type = fnMap[(x.value as any).fn];
                             const sign = negated ? "neg" : "pos";
                             const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
                             return `${sign}_${type}(${fn}${args_str}, ${printTerm(ret)})`
@@ -268,7 +268,7 @@ export function printStateConstraints(mod: ModuleAST): string {
                                 "<=": "lte",
                                 "=": "eq",
                                 "!=": "neq"
-                            };
+                            } as any;
                             return `${relMap[rel]}(${printTerm(left)}, ${printTerm(right)})`;
                     }
                 })();
@@ -290,10 +290,10 @@ export function printCausalLaws(mod: ModuleAST): string {
     const causal_laws = mod.axioms?.filter(({ name }) => name === Nodes.CausalLaw)
         .map((axiom, i) => {
             const { value: { occurs, body, head } } = axiom as unknown as CausalLaw;
-            const literals = body.filter(clause => clause.name === "FunctionLiteral")
+            const literals = body.filter((clause: { name: string; }) => clause.name === "FunctionLiteral")
                 .concat(head);
             const varMap = literals
-                .reduce((prev, curr) => {
+                .reduce((prev: { [x: string]: string; }, curr: any) => {
                     const vars = getVariablesFromFnLit(curr as FunctionLiteral);
                     const sig = fnSignatures[(curr as FunctionLiteral).value.fn];
 
@@ -310,7 +310,7 @@ export function printCausalLaws(mod: ModuleAST): string {
                     return prev;
                 }, {} as Record<string, string>);
 
-            for (const clause of body.filter(clause => clause.name === "ArithmeticExpression")) {
+            for (const clause of body.filter((clause: { name: string; }) => clause.name === "ArithmeticExpression")) {
                 const { value: [left, , right] } = clause as ArithmeticExpression;
 
                 const vars = getVariablesFromTerm(left).concat(getVariablesFromTerm(right));
@@ -335,7 +335,7 @@ export function printCausalLaws(mod: ModuleAST): string {
             const doms_str = doms.join(", ");
             const rule_name = `causal_law${i + 1}(${vars})`;
             const fnMap = getFnMap(mod);
-            const body_rules = body.map(x => {
+            const body_rules = body.map((x: any) => {
                 const cond = (() => {
                     switch (x.name) {
                         case "FunctionLiteral":
@@ -353,14 +353,14 @@ export function printCausalLaws(mod: ModuleAST): string {
                                 "<=": "lte",
                                 "=": "eq",
                                 "!=": "neq"
-                            };
+                            } as any;
                             return `${relMap[rel]}(${printTerm(left)}, ${printTerm(right)})`;
                     }
                 })();
                 return `body(${rule_name}, ${cond}) :- ${doms_str}.`
             }).join("\n");
 
-            const head_rules = head.map(({ value: { fn, args, ret, negated } }) => {
+            const head_rules = head.map(({ value: { fn, args, ret, negated } }: any) => {
                 const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
                 const sign = negated ? "neg" : "pos";
                 return `head(causal_law${i + 1}(${vars}), ${sign}_fluent(${fn}${args_str}, ${printTerm(ret)})) :- ${doms_str}.`;
