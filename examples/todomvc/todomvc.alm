@@ -106,11 +106,12 @@ axioms
     occurs(A) causes
         text(Todo) = Text,
         completed(Todo) = false,
-        next_todo = Todo + 1
+        next_todo = NextTodo
     if
         instance(A, new_todo),
         text(A) = Text,
-        next_todo = Todo.
+        next_todo = Todo,
+        NextTodo = Todo + 1.
     
     // Natural language:
     // When the toggle_all action occurs,

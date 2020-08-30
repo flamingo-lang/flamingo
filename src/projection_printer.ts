@@ -2,7 +2,6 @@ import { Nodes, ModuleAST, Sorts, Statics, Fluents, FunctionDecl, StateConstrain
 import { unpad } from "./unpad";
 import { collectFunctionSignatures } from "./collectFunctionSignatures";
 import { range } from "rambda";
-import { type } from "os";
 
 
 export function printSortNames(sorts: Sorts) {
@@ -143,7 +142,10 @@ function getVariablesFromTerm(term: Term) {
 }
 function getFnMap(mod: ModuleAST): Record<string, "static" | "fluent"> {
     const statics = {} as Record<string, "static">;
-    for (const x of mod.statics?.value ?? []) {
+    const stats = [...(mod.statics?.value ?? []),
+    ...(mod.sorts?.value.filter(x => x.attributes).flatMap(x => x.attributes!) ?? [])
+    ];
+    for (const x of stats) {
         statics[x.value.ident.value] = "static";
     }
 
@@ -151,6 +153,7 @@ function getFnMap(mod: ModuleAST): Record<string, "static" | "fluent"> {
     const f = [...mod.fluents?.basic?.value ?? [],
     ...mod.fluents?.defined?.value ?? [],
     ];
+
     for (const x of f) {
         fluents[x.value.ident.value] = "fluent";
     }
@@ -321,7 +324,7 @@ export function printCausalLaws(mod: ModuleAST): string {
                 }
             }
 
-            varMap[occurs.value] = "action";
+            varMap[occurs.value] = "actions";
             const vars = Object.keys(varMap).join(", ");
             const doms = [];
             for (const key in varMap) {
@@ -336,6 +339,9 @@ export function printCausalLaws(mod: ModuleAST): string {
                     switch (x.name) {
                         case "FunctionLiteral":
                             const { fn, args, ret, negated } = x.value;
+                            if (fn === "filter") {
+                                console.log(fnMap);
+                            }
                             const type = fnMap[x.value.fn];
                             const sign = negated ? "neg" : "pos";
                             const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
@@ -400,11 +406,17 @@ export function printInitially(mod: ModuleAST): string {
 export function printModule(mod: ModuleAST): string {
     return unpad(`
     :-use_module(library(lists)).
-    :-dynamic(n/1).
+    :-dynamic(time/1).
     :-dynamic(occurs/2).
+    :-dynamic(holds/3).
+    :-dynamic(nholds/3).
+    :-dynamic(holds/1).
+    :-dynamic(dom/2).
+    :-dynamic(body_satisfied/2).
+    
     :-discontiguous(holds/3).
     :-discontiguous(holds/1).
-    :-discontiguous(not_holds/3).
+    :-discontiguous(nholds/3).
     :-discontiguous(dom/2).
     :-discontiguous(body/2).
     :-discontiguous(head/2).
@@ -429,20 +441,20 @@ export function printModule(mod: ModuleAST): string {
     ${printInitially(mod)}
 
     count(X, E, N) :- findall(X, E, L), length(L, N).
-    time(X) :- n(N), X < N, X >= 0.
+
     body_satisfied(R,T) :-
         time(T),
-        count(F, (body(R,pos_fluent(F,V)), fluent(_,F,V)), PB),
-        count( F, (body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, T) ), PB),
+        count(F, (body(R,pos_fluent(F,V)), fluent(_,F,V)), FPB),
+        count( F, (body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, T) ), FPB),
 
-        count( F, (body(R,neg_fluent(F,V)), fluent(_,F,V)), NB),
-        count( F, (body(R,neg_fluent(F,V)), fluent(_, F,V), not_holds(F,V,T)), NB),
+        count( F, (body(R,neg_fluent(F,V)), fluent(_,F,V)), FNB),
+        count( F, (body(R,neg_fluent(F,V)), fluent(_, F,V), nholds(F,V,T)), FNB),
 
-        count( F, (body(R,pos_static(F,V))), PB),
-        count( F, (body(R,pos_static(F,V)), holds(static(F,V))), PB),
+        count( F, (body(R,pos_static(F,V))), SPB),
+        count( F, (body(R,pos_static(F,V)), holds(static(F,V))), SPB),
 
-        count( F, (body(R,neg_static(F,V))), NB),
-        count( F, (body(R,neg_static(F,V)), \\+ holds(static(F,V))), NB),
+        count( F, (body(R,neg_static(F,V))), SNB),
+        count( F, (body(R,neg_static(F,V)), \\+ holds(static(F,V))), SNB),
 
         count( E, (body(R, gt(A, B))),  GT),
         count( E, (body(R, gt(A, B)), A > B),  GT),
@@ -462,53 +474,62 @@ export function printModule(mod: ModuleAST): string {
         count( E, (body(R, neq(A, B))),  NEQ),
         count( E, (body(R, neq(A, B)), A =\= B ),  NEQ).
 
-    holds(F, V, T + 1) :-
+    holds_next(F, V, T) :-
         dlaw(R),
         action(R, X),
         occurs(X, T),
         body_satisfied(R, T),
-        head(R, pos_fluent(F,V)).
+        head(R, pos_fluent(F,V)), !.
     
-    not_holds(F, V, T + 1) :-
+    nholds_next(F, V, T) :-
         dlaw(R),
         action(R, X),
         occurs(X, T),
         body_satisfied(R, T),
-        head(R, neg_fluent(F,V)).
+        head(R, neg_fluent(F,V)), !.
     
     holds(F, V, T) :-
         state_constraint(R),
-        head(R, pos(F,V)),
+        head(R, pos_fluent(F,V)),
         body_satisfied(R, T).
     
-    not_holds(F, V, T) :-
+    nholds(F, V, T) :-
         state_constraint(R),
-        head(R, neg(F,V)),
+        head(R, neg_fluent(F,V)),
         body_satisfied(R, T).
     
-    not_holds(F, V, T) :- fluent(defined, F, V), \\+ holds(F, V, T).
-    
-    holds(F, V, T + 1) :-
-        fluent(basic, F, V),
-        holds(F, V, T),
-        \\+ not_holds(F, V, T + 1),
-            n(N),
-            T < N.
+    nholds(F, V, T) :- fluent(defined, F, V), \\+ holds(F, V, T).
 
-    not_holds(F, V, T + 1) :-
+    holds_inertia(F, V, T2) :-
+	    T1 is T2 - 1,
+        holds(F, V, T1),
         fluent(basic, F, V),
-        not_holds(F, V, T),
-        \\+ holds(F, V, T + 1),
-        n(N),
-        T < N.
+        \\+ nholds(F, V, T2). 
+
+    nholds_inertia(F, V, T2) :-
+	    T1 is T2 - 1,
+        holds(F, V, T1),
+        fluent(basic, F, V),
+        \\+ nholds(F, V, T2). 
 
     dom(S1, X) :- holds(static(link(S2), S1)), dom(S2, X).
 
     holds(static(link(booleans), universe)).
     dom(booleans, true). dom(booleans, false).
 
-    holds(static(link(action), universe)).
+    holds(static(link(actions), universe)).
 
     holds(static(instance(X, S), true)) :- dom(S, X).
     `)
 }
+
+/*
+
+
+
+
+
+
+
+
+*/

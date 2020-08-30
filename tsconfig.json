@@ -9,6 +9,9 @@
     "outDir": "out",
     "sourceMap": true,
     "strict": true,
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "jsx": "react",
+    "declaration": true,
+    "esModuleInterop": true
   }
 }

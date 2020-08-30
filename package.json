@@ -1,7 +1,7 @@
 {
-  "name": "flamingo2",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "flamingo-lang",
+  "version": "0.1.0-alpha1",
+  "main": "out/index.js",
   "author": "Daniel Hines <d4hines@gmail.com>",
   "license": "MIT",
   "scripts": {
@@ -12,6 +12,7 @@
     "@types/mocha": "^8.0.2",
     "@types/node": "^14.6.1",
     "@types/parsimmon": "^1.10.2",
+    "@types/react": "^16.9.48",
     "chai": "^4.2.0",
     "clipboardy": "^2.3.0",
     "mocha": "^8.1.1",
@@ -21,6 +22,7 @@
   "dependencies": {
     "parsimmon": "^1.15.0",
     "rambda": "^5.12.0",
+    "react": "^16.13.1",
     "tau-prolog": "^0.2.81"
   }
 }
