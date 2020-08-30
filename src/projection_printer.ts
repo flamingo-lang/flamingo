@@ -11,9 +11,9 @@ export function printSortNames(sorts: Sorts) {
             second.map((secondSortName) => {
                 if (Array.isArray(secondSortName)) {
                     const doms = range(secondSortName[0], secondSortName[1] + 1)
-                        .map(x => `dom(${firstSortName}, ${x}).`).join(" ")
+                        .map((x: any) => `dom(${firstSortName}, ${x}).`).join(" ")
                     const is_a = range(secondSortName[0], secondSortName[1] + 1)
-                        .map(x => `holds(static(is_a(${x}), ${firstSortName})).`).join(" ")
+                        .map((x: any) => `holds(static(is_a(${x}), ${firstSortName})).`).join(" ")
                     // Range case
                     return unpad(`
                         holds(static(link(${firstSortName}), integers)).

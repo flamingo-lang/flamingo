@@ -7,7 +7,6 @@ import { useObservable } from "rxjs-hooks";
 import { parseModule } from "./parse";
 import { printModule, printQuery } from "./projection_printer";
 import * as R from "rambda";
-import { writeSync } from "clipboardy";
 
 const limit = PLimit(1);
 
@@ -23,7 +22,6 @@ export type FlamingoQueryResult = Record<
 export const createSession = (logic: string): FlamingoSession => {
   const s = create();
   const translatedModule = printModule(parseModule(logic));
-  writeSync(translatedModule);
   s.consult(translatedModule);
   return { runtime: s, n: 0 };
 };
@@ -118,7 +116,7 @@ export const dispatch = (
     const name = `${action}${session.n}`;
     const attrs = R.values(
       R.map(
-        (v, k) => `assertz(holds(static(${k}(${name}), ${v}))).`,
+        (v: any, k: any) => `assertz(holds(static(${k}(${name}), ${v}))).`,
         attributes
       )
     ).join("\n");
