@@ -158,6 +158,7 @@ declare namespace tau {
       public consult(program: string): true | Term<1, 'error'>;
 
       public query(query: string): void;
+      public query_all(...query: any): Promise<Record<string, any>[]>;
 
       public answer(callback: (answer: Answer) => void): void;
 

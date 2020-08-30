@@ -1,4 +1,4 @@
-import { pLimit} from "./pLimit";
+import { pLimit } from "./pLimit";
 import { parseModule } from "./parse";
 import { printModule, printQuery } from "./projection_printer";
 import Pl from "./tau-prolog";
@@ -28,55 +28,31 @@ export const runQuery = (
   query: string
 ): Promise<FlamingoQueryResult> => {
   return limit(
-    () =>
-      new Promise((res) => {
-        const translatedQuery = printQuery(session.n, query);
-        session.runtime.query(translatedQuery);
-        let answers: [string, string][] = [];
-        session.runtime.answers(
-          (ans) => {
-            const fmt = Pl.format_answer(ans).slice(0, -1);
-            if (fmt !== "false") {
-              const subs = fmt
-                .split(",")
-                .map((x) => x.trim())
-                .map((x) => x.split(" = "));
+    async () => {
+      const translatedQuery = printQuery(session.n, query);
 
-              answers = answers.concat(subs as any);
-            }
-          },
-          10000,
-          () => {
-            const ret = {} as FlamingoQueryResult;
-            for (const [v, val] of answers) {
-              const parsedVal = ((): FlamingoValue => {
-                if (val === "true" || val === "false") {
-                  return Boolean(val);
-                } else if (!Number.isNaN(Number(val))) {
-                  return Number(val);
-                } else {
-                  return val;
-                }
-              })();
+      const answers: Record<string, number | string>[] = await session.runtime.query_all(translatedQuery);
+      return answers.reduce((prev, curr) => {
+        for (const k in curr) {
+          const v = curr[k];
+          const val = (v === "true" || v === "false") ? Boolean(v) : v;
 
-              if (v in ret) {
-                if (
-                  Array.isArray(ret[v]) &&
-                  !(ret[v] as FlamingoValue[]).includes(parsedVal)
-                ) {
-                  (ret[v] as FlamingoValue[]).push(parsedVal);
-                } else if (ret[v] !== parsedVal) {
-                  ret[v] = [ret[v] as FlamingoValue, parsedVal];
-                }
-              } else {
-                ret[v] = parsedVal;
-              }
+          if (k in prev) {
+            if (
+              Array.isArray(prev[k]) &&
+              !(prev[k] as FlamingoValue[]).includes(val)
+            ) {
+              (prev[k] as FlamingoValue[]).push(val);
+            } else if (prev[k] !== val) {
+              prev[k] = [prev[k] as FlamingoValue, val];
             }
-            res(ret);
+          } else {
+            prev[k] = val;
           }
-        );
-      })
-  );
+        }
+        return prev;
+      }, {} as FlamingoQueryResult);
+    });
 };
 
 export const dispatch = (
@@ -96,8 +72,8 @@ export const dispatch = (
         }
       }
       return ret.join("\n");
-    })(); 
-    
+    })();
+
     // attrs.reduce((prev, curr) => {
     //   const k = curr;
     //   const v = attributes[k];
@@ -116,7 +92,7 @@ export const dispatch = (
 
     await new Promise((res) => {
       session.runtime.query(assertz),
-        session.runtime.answers(() => {}, 10000, res);
+        session.runtime.answers(() => { }, 10000, res);
     });
 
     const query1 = `holds_next(F1,V1,${session.n}). nholds_next(F2, V2, ${session.n}). holds_inertia(F3, V3, ${session.n}). nholds_inertia(F4, V4, ${session.n}).`;
@@ -149,7 +125,7 @@ export const dispatch = (
 
     await new Promise((res) => {
       session.runtime.query(query2);
-      session.runtime.answers(() => {}, 100000, res);
+      session.runtime.answers(() => { }, 100000, res);
     });
   });
 };
