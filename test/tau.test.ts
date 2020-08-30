@@ -3,7 +3,6 @@ import { readFileSync } from "fs";
 import { printModule } from "../src/projection_printer";
 import { parseModule } from "../src/parse";
 import { writeFileSync } from "fs";
-import { writeSync } from "clipboardy";
 
 describe("Tau Parsing", () => {
     it("Should work on the static file", () => {
@@ -108,7 +107,6 @@ describe("Tau Parsing", () => {
         `);
 
         const logic = printModule(alm);
-        writeSync(logic);
         writeFileSync("./prolog-test.lp", logic);
         const s = Pl.create();
         const parseResult = s.consult(logic);
