@@ -1,1 +1,1 @@
-export { runQuery, createSession, dispatch, FlamingoSession, FlamingoValue, FlamingoQueryResult } from "./runtime";
+export { FlamingoValue, FlamingoQueryResult, makeSession } from "./runtime";
