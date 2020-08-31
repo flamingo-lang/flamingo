@@ -23,11 +23,13 @@ export type FlamingoValue = string | boolean | number;
 
 export type FlamingoQueryResult = Record<string, FlamingoValue>[];
 
+export type FlamingoAction = [string, Record<string, FlamingoValue>];
+
 export const makeSession = (run: (program: string, models?: number, options?: string) => Promise<ClingoResult>, logic: string) => {
   const program = printModule(parseModule(logic))
   return (
     queries: string[],
-    history: [string, Record<string, FlamingoValue>][],
+    history: FlamingoAction[],
   ): Promise<Map<string,FlamingoQueryResult>> => limit(async () => {
     const queryASP = queries.map((query) => {
       const parsed = ALM.Query.tryParse(query) as FunctionLiteral[];
