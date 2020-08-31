@@ -1,0 +1,3 @@
+[submodule "clingo-wasm"]
+	path = clingo-wasm
+	url = https://github.com/domoritz/clingo-wasm.git
