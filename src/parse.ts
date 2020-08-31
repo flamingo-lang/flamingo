@@ -102,7 +102,7 @@ export const ALM = P.createLanguage({
     False: () => P.string("false"),
     Boolean : r => P.alt(r.True, r.False)
         .desc("a boolean")
-        .map(x => Boolean(x.value))
+        .map(x => x === "true")
         .node(Nodes.Boolean),
     Integer: () => P.regexp(/(\-)?[0-9]+/).map(x => Number(x)).desc("an integer"),
     Identifier: () => P.regexp(/[a-z]+[A-Za-z0-9_]*/).desc("an identifier").node(Nodes.Identifier),
@@ -305,12 +305,16 @@ export const ALM = P.createLanguage({
         })),
     Query: r => commaSeparated(r.FunctionLiteral).skip(P.string(".").skip(P.optWhitespace)),
     String: r => P.regexp(/"((?:\\.|.)*?)"/, 1),
-    QueryVars: r => commaSeparated(r.Variable).wrap(P.string('"'), P.string('"')),
+    QueryVars: r => commaSeparated(r.Variable).wrap(P.string('"'), P.string('"'))
+        .map(x => x.map(y => y.value)),
     QueryResult: r => P.seq(
-        // r.Query.wrap(P.string('"'), P.string('"')).skip(P.string(",")),
         r.String.skip(P.string(",")),
         r.QueryVars.skip(P.string(",")),
-        commaSeparated(P.alt(r.Integer, r.Boolean, r.String, r.Identifier))
+        commaSeparated(P.alt(
+            r.Integer,
+            r.Boolean.map(x => x.value),
+            r.String,
+            r.Identifier.map(x => x.value)))
     ).wrap(P.string("("), P.string(")"))
 });
 

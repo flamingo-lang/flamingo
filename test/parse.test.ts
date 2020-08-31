@@ -335,4 +335,18 @@ describe("Parsing", () => {
         expect(result1.map((x: any) => x.value.fn))
             .to.have.members(["visible", "active", "active_filter"]);
     });
+
+    it("QueryResult", () => {
+        const result1 = ALM.QueryResult
+            .tryParse('("completed(Todo) = Completed.","Completed,Todo",true,1)');
+        expect(result1[0]).to.equal("completed(Todo) = Completed.");
+        expect(result1[1]).to.have.members(["Todo", "Completed"]);
+        expect(result1[2][0]).to.be.true;
+
+        const result2 = ALM.QueryResult
+            .tryParse('("completed(Todo) = Completed.","Completed,Todo",false,2)');
+        expect(result2[0]).to.equal("completed(Todo) = Completed.");
+        expect(result2[1]).to.have.members(["Todo", "Completed"]);
+        expect(result2[2][0]).to.be.false;
+    });
 });

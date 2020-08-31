@@ -302,7 +302,14 @@ export function printCausalLaws(mod: ModuleAST): string {
                 .reduce((prev: { [x: string]: string; }, curr: any) => {
                     const vars = getVariablesFromFnLit(curr as FunctionLiteral);
                     const sig = fnSignatures[(curr as FunctionLiteral).value.fn];
-
+                    if (sig === undefined) {
+                        throw new Error(unpad(
+                            `Error while printing function ${curr.value.fn}.
+                             Most likely cause is that function ${curr.value.fn} doesn't exist in the program signature.
+                             Check your sorts and/or function declarations.
+                            `
+                        ));
+                    }
                     for (const a of vars?.args ?? []) {
                         for (const [v, n] of a) {
                             prev[v.value] = sig.args![n];
@@ -424,106 +431,13 @@ export function printModule(mod: ModuleAST): string {
 
     ${printInitially(mod)}
 
-    %body_satisfied(R, I) :-
-        %step(I),
-        %body(R, _),
-        %#count {F : body(R,pos_fluent(F,V)), fluent(_,F,V) } = FPB,
-        %#count { F : body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, I) } = FPB.
-        %#count { F : body(R,neg_fluent(F,V)), fluent(_,F,V) } = FNB,
-        %#count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), -holds(F,V,I) } = FNB,
-        %#count { F : body(R,pos_static(F,V)) } = SPB,
-        %#count { F : body(R,pos_static(F,V)), holds(static(F,V)) } = SPB,
-        %#count { F : body(R,neg_static(F,V)) } = SNB,
-        %#count { F : body(R,neg_static(F,V)), not holds(static(F,V)) } = SNB,
-        %#count { E : body(R, gt(A, B)) } = GT,
-        %#count { E : body(R, gt(A, B)), A > B } = GT,
-        %#count { E : body(R, gte(A, B)) } = GTE,
-        %#count { E : body(R, gte(A, B)), A >= B } = GTE,
-        %#count { E : body(R, lt(A, B)) } = LT,
-        %#count { E : body(R, lt(A, B)), A < B } = LT,
-        %#count { E : body(R, lte(A, B)) } = LTE,
-        %#count { E : body(R, lte(A, B)), A <= B } = LTE,
-        %#count { E : body(R, eq(A, B)) } = EQ,
-        %#count { E : body(R, eq(A, B)), A = B  } = EQ,
-        %#count { E : body(R, neq(A, B)) } = NEQ,
-        %#count { E : body(R, neq(A, B)), A != B  } = NEQ.
-
-    holds(F, V, I + 1) :-
-        step(I),
-        dlaw(R),
-        action(R, A),
-        occurs(A, I),
-        body_satisfied(R, I),
-        head(R, pos_fluent(F,V)),
-        1 < n.
-
-    -holds(F, V, I + 1) :-
-        step(I),
-        dlaw(R),
-        action(R, A),
-        occurs(A, I),
-        body_satisfied(R, I),
-        head(R, pos_fluent(F,V')),
-        holds(F, V, I),
-        V != V',
-        1 < n.
-    
-    -holds(F, V, I + 1) :-
-        step(I),
-        dlaw(R),
-        action(R, X),
-        occurs(X, T),
-        body_satisfied(R, T),
-        head(R, neg_fluent(F,V)),
-        I < n.
-    
-    holds(F, V, I) :-
-        state_constraint(R),
-        head(R, pos_fluent(F,V)),
-        body_satisfied(R, I).
-    
-    -holds(F, V, I) :-
-        state_constraint(R),
-        head(R, neg_fluent(F, V)),
-        body_satisfied(R, I).
-    
-    -holds(F, V, I) :-
-        step(I),
-        fluent(defined, F, V),
-        not holds(F, V, I).
-
-    holds(F, V, I + 1) :-
-        step(I),
-        fluent(basic, F, V),
-        holds(F, V, I),
-        not -holds(F, V, I + 1),
-        I < n. 
-
-    -holds(F, V, I + 1) :-
-        step(I),
-        fluent(basic, F, V),
-        -holds(F, V, I),
-        not holds(F, V, I + 1),
-        I < n. 
-
-    dom(S1, X) :- holds(static(link(S2), S1)), dom(S2, X).
-
-    holds(static(link(booleans), universe)).
-    dom(booleans, true). dom(booleans, false).
-
-    holds(static(link(actions), universe)).
-
-    holds(static(instance(X, S), true)) :- dom(S, X).
-
-    #show.
-
     body_satisfied(R, I) :-
         step(I),
         body(R, _),
         #count { F : body(R, pos_fluent(F,V)), fluent(_,F,V) } = FPB,
         #count { F : body(R, pos_fluent(F,V)), fluent(_,F,V), holds(F, V, I) } = FPB,
         #count { F : body(R,neg_fluent(F,V)), fluent(_,F,V) } = FNB,
-        #count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), -holds(F,V,I) } = FNB,
+        #count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), nholds(F,V,I) } = FNB,
         #count { F : body(R, pos_static(F,V)) } = SPB,
         #count { F : body(R, pos_static(F,V)), holds(static(F,V)) } = SPB,
         #count { F : body(R,neg_static(F,V)) } = SNB,
@@ -541,7 +455,82 @@ export function printModule(mod: ModuleAST): string {
         #count { (A, B) : body(R, neq(A, B)) } = NEQ,
         #count { (A, B) : body(R, neq(A, B)), A != B  } = NEQ.
 
+    holds(causal_law, F, V, I + 1) :-
+        step(I),
+        dlaw(R),
+        action(R, A),
+        occurs(A, I),
+        body_satisfied(R, I),
+        head(R, pos_fluent(F,V)),
+        1 < n.
+    
+    nholds(causal_law_flip, F, V, I + 1) :-
+        step(I),
+        dlaw(R),
+        action(R, A),
+        occurs(A, I),
+        body_satisfied(R, I),
+        head(R, pos_fluent(F,V')),
+        holds(F, V, I),
+        V != V',
+        1 < n.
+    
+    nholds(causal_law_neg, F, V, I + 1) :-
+        step(I),
+        dlaw(R),
+        action(R, X),
+        occurs(X, T),
+        body_satisfied(R, T),
+        head(R, neg_fluent(F,V)),
+        I < n.
+    
+    holds(sc, F, V, I) :-
+        state_constraint(R),
+        head(R, pos_fluent(F,V)),
+        body_satisfied(R, I).
+    
+    nholds(sc_neg, F, V, I) :-
+        state_constraint(R),
+        head(R, neg_fluent(F, V)),
+        body_satisfied(R, I).
+    
+    nholds(cwa, F, V, I) :-
+        step(I),
+        fluent(defined, F, V),
+        not holds(F, V, I).
+    
+    holds(inertia, F, V, I + 1) :-
+        step(I),
+        fluent(basic, F, V),
+        holds(F, V, I),
+        not nholds(F, V, I + 1),
+        I < n. 
+    
+    nholds(inertia_neg, F, V, I + 1) :-
+        step(I),
+        fluent(basic, F, V),
+        nholds(F, V, I),
+        not holds(F, V, I + 1),
+        I < n. 
+    
+    holds(F, V, I) :- holds(_, F, V, I).
+    nholds(F, V, I) :- nholds(_, F, V, I).
+    
+
+    dom(S1, X) :- holds(static(link(S2), S1)), dom(S2, X).
+
+    holds(static(link(booleans), universe)).
+    dom(booleans, true). dom(booleans, false).
+
+    holds(static(link(actions), universe)).
+
+    holds(static(instance(X, S), true)) :- dom(S, X).
+
+    #show.
+
     #show ("Duplicate values found", F, V, V', "at_time", I) : holds(F, V, I), holds(F, V', I), V != V'.
+    #show ("Conflict found", F, V, I, R, R) : holds(R, F, V, I), nholds(R, F, V, I).
+    
     %#show (F, V) : holds(F, V, n).
     `)
 }

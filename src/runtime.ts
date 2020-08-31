@@ -62,29 +62,17 @@ export const makeSession = (run: (program: string, models?: number, options?: st
     ${program}
     ${history_str}
     ${queryASP}`;
-
     const results = await run(asp, 1);
     const answers = results.Call[0].Witnesses[0].Value;
     const ret: Map<string, FlamingoQueryResult> = new Map();
     for (const ans of answers) {
-      if (ans.includes("Duplicate values found")) {
+      if (ans.includes("Duplicate values found") || ans.includes("Conflict found")) {
         throw new Error(ans);
       }
       const [query, vars, vals] = ALM.QueryResult.tryParse(ans);
-      const res = (vars.map((x: any) => x.value) as string[])
+      const res = (vars as string[])
         .reduce((prev, curr, i) => {
-          const v = vals[i];
-          const parsedVal = (() => {
-            
-            if (!Number.isNaN(Number(v))) {
-              return Number(v);
-            } else if(typeof v === "object"){
-                return v.value;
-            } else {
-              return v;
-            }
-          })();
-          prev[curr] = parsedVal;
+          prev[curr] = vals[i];
           return prev;
         }, {} as Record<string, FlamingoValue>);
 
