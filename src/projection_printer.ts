@@ -404,6 +404,7 @@ export function printInitially(mod: ModuleAST): string {
 export function printModule(mod: ModuleAST): string {
     return unpad(`
     #defined occurs/2.
+    #defined body/2.
 
     step(0..n).
 
@@ -423,11 +424,11 @@ export function printModule(mod: ModuleAST): string {
 
     ${printInitially(mod)}
 
-    body_satisfied(R, I) :-
-        step(I),
-        body(R, _),
-        #count {F : body(R,pos_fluent(F,V)), fluent(_,F,V) } = FPB,
-        #count { F : body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, I) } = FPB.
+    %body_satisfied(R, I) :-
+        %step(I),
+        %body(R, _),
+        %#count {F : body(R,pos_fluent(F,V)), fluent(_,F,V) } = FPB,
+        %#count { F : body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, I) } = FPB.
         %#count { F : body(R,neg_fluent(F,V)), fluent(_,F,V) } = FNB,
         %#count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), -holds(F,V,I) } = FNB,
         %#count { F : body(R,pos_static(F,V)) } = SPB,
@@ -450,11 +451,22 @@ export function printModule(mod: ModuleAST): string {
     holds(F, V, I + 1) :-
         step(I),
         dlaw(R),
-        action(R, X),
-        occurs(X, I),
+        action(R, A),
+        occurs(A, I),
         body_satisfied(R, I),
         head(R, pos_fluent(F,V)),
-        I < n.
+        1 < n.
+
+    -holds(F, V, I + 1) :-
+        step(I),
+        dlaw(R),
+        action(R, A),
+        occurs(A, I),
+        body_satisfied(R, I),
+        head(R, pos_fluent(F,V')),
+        holds(F, V, I),
+        V != V',
+        1 < n.
     
     -holds(F, V, I + 1) :-
         step(I),
@@ -508,17 +520,36 @@ export function printModule(mod: ModuleAST): string {
     dom(new_todo, new_todo0).
     holds(static(new_text(new_todo0), todo1)).
     occurs(new_todo0, 0).
-
     dom(new_todo, new_todo1).
     holds(static(new_text(new_todo1), todo2)).
     occurs(new_todo1, 1).
+   
+    body_satisfied(R, I) :-
+        step(I),
+        body(R, _),
+        #count { F : body(R, pos_fluent(F,V)), fluent(_,F,V) } = FPB,
+        #count { F : body(R, pos_fluent(F,V)), fluent(_,F,V), holds(F, V, I) } = FPB,
+        #count { F : body(R,neg_fluent(F,V)), fluent(_,F,V) } = FNB,
+        #count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), -holds(F,V,I) } = FNB,
+        #count { F : body(R, pos_static(F,V)) } = SPB,
+        #count { F : body(R, pos_static(F,V)), holds(static(F,V)) } = SPB,
+        #count { F : body(R,neg_static(F,V)) } = SNB,
+        #count { F : body(R,neg_static(F,V)), not holds(static(F,V)) } = SNB,
+        #count { (R, A, B) : body(R, gt(A, B)) } = GT,
+        #count { (R, A, B) : body(R, gt(A, B)), A > B } = GT,
+        #count { (R, A, B) : body(R, gte(A, B)) } = GTE,
+        #count { (R, A, B) : body(R, gte(A, B)), A >= B } = GTE,
+        #count { (R, A, B) : body(R, lt(A, B)) } = LT,
+        #count { (R, A, B) : body(R, lt(A, B)), A < B } = LT,
+        #count { (R, A, B) : body(R, lte(A, B)) } = LTE,
+        #count { (R, A, B) : body(R, lte(A, B)), A <= B } = LTE,
+        #count { (R, A, B) : body(R, eq(A, B)) } = EQ,
+        #count { (R, A, B) : body(R, eq(A, B)), A = B  } = EQ,
+        #count { (R, A, B) : body(R, neq(A, B)) } = NEQ,
+        #count { (R, A, B) : body(R, neq(A, B)), A != B  } = NEQ.
 
-    #show (holds, F, V) : holds(F, V, n).
-    #const n = 3.
-
-   #show (body, R, B) : body(R, B).
-   #show (law, L) : dlaw(L).
-   % #show (dom, S, X) : dom(S, X).
+    #show ("Duplicate values found", F, V, V', "at_time", I) : holds(F, V, I), holds(F, V', I), V != V'.
+    %#show (F, V) : holds(F, V, n).
     `)
 }
 

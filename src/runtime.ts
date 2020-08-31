@@ -55,6 +55,7 @@ export const makeSession = (run: (program: string, models?: number, options?: st
       ${attrs}
       occurs(${name}, ${i}).`;
     }).join("\n");
+    
     const asp = `
     #const n = ${history.length}.
     ${program}
@@ -63,15 +64,20 @@ export const makeSession = (run: (program: string, models?: number, options?: st
     writeSync(asp);
     const results = await run(asp, 1, `--const n=${history.length}`);
     const answers = results.Call[0].Witnesses[0].Value;
-    console.log(answers);
     const ret: Map<string, FlamingoQueryResult> = new Map();
     for (const ans of answers) {
-      const [q, vars, ...vals] = ans.slice(1, -1)
-        .replace('"', "")
-        .split(",");
-      const res = vars.split(",").reduce((prev, curr, i) => {
+      const [q, rest] = ans.slice(0, -1).split('","');
+      const [vars0, vals0] = rest.split("\",");
+      if (q === "Duplicate values found") {
+        throw new Error(ans);
+      }
+      const vars = vars0.split(",");
+      const vals = vals0.split(',');
+      console.log("vars", vars);
+      console.log("vals", vals);
+      console.log("q", q);
+      const res = vars.reduce((prev, curr, i) => {
         const v = vals[i];
-        const k = curr.slice(1, -1);
         const parsedVal = (() => {
           if (v === "true" || v === "false") {
             return Boolean(v);
@@ -81,11 +87,11 @@ export const makeSession = (run: (program: string, models?: number, options?: st
             return v;
           }
         })();
-        prev[k] = parsedVal;
+        prev[curr] = parsedVal;
         return prev;
       }, {} as Record<string, FlamingoValue>);
-
-      const qq = q.slice(0, -1);
+      
+      const qq = q.slice(2);
       if (ret.has(qq)) {
         ret.set(qq, [...ret.get(qq),  res])
       } else {
@@ -95,87 +101,3 @@ export const makeSession = (run: (program: string, models?: number, options?: st
     return ret;
   });
 }
-
-
-
-// export type FlamingoSession = { runtime: ReturnType<typeof Pl.create>; n: number };
-
-
-// let session: FlamingoSession;
-// let n: number;
-// export const createSession = (logic: string): void => {
-//   session = { runtime: Pl.create(), n: 0 };
-//   const translatedModule = printModule(parseModule(logic));
-//   session.runtime.consult(translatedModule);
-// };
-
-// export const runQuery = (
-//   query: string
-// ): Promise<FlamingoQueryResult> => {
-//   return limit(
-//     async () => {
-//       const translatedQuery = printQuery(session.n, query);
-
-//       const answers: Record<string, number | string>[] = await session.runtime.query_all(translatedQuery);
-//       return answers.reduce((prev, curr) => {
-//         for (const k in curr) {
-//           const v = curr[k];
-//           const val = (v === "true" || v === "false") ? Boolean(v) : v;
-
-          
-//         }
-//         return prev;
-//       }, {} as FlamingoQueryResult);
-//     });
-// };
-
-// export const dispatch = (
-//   action: string,
-//   attributes: Record<string, FlamingoValue>
-// ): Promise<void> => {
-//   return limit(async () => {
-//     const name = `${action}${session.n}`;
-//     // const attrs = Object.keys(attributes);
-//     const attrs = (() => {
-//       const ret: string[] = [];
-//       for (const k in attributes) {
-//         if (Object.prototype.hasOwnProperty.call(attributes, k)) {
-//           const v = attributes[k];
-//           ret.push(`assertz(holds(static(${k}(${name}), ${v}))).`);
-//         }
-//       }
-//       return ret.join("\n");
-//     })();
-
-//     const assertz = `
-//     assertz(dom(${action}, ${name})).
-//     ${attrs}
-//     assertz(occurs(${name}, ${session.n})).`;
-
-//     await session.runtime.query_all(assertz);
-
-//     const queries = [
-//       `holds_next(F,V,${session.n}).`,
-//       `nholds_next(F, V, ${session.n}).`,
-//       `holds_inertia(F, V, ${session.n}).`,
-//       `nholds_inertia(F, V, ${session.n}).`
-//     ];
-
-//     session.n++;
-
-//     const results = [];
-//     for (const q of queries) {
-//       for (const ans of await session.runtime.query_all(q)) {
-//         if ("F" in ans) {
-
-//           results.push(`assertz(holds(${ans.F}, ${ans.V}, 0)).`);
-//         }
-//       }
-//     }
-
-//     console.log("foo", await session.runtime.query_all(results.join(" ")));
-
-//     const holds = await session.runtime.query_all(`holds(F, V, 0).`);
-//     console.log("holds at", session.n, holds);
-//   });
-// };
