@@ -1,20 +1,105 @@
-// import { pLimit } from "./pLimit";
-// import { parseModule } from "./parse";
-// import { printModule, printQuery } from "./projection_printer";
-// import Pl from "./tau-prolog";
-// import { load } from "./tau-list";
-// load(Pl);
+import { ALM, FunctionLiteral, parseModule } from "./parse";
+import { pLimit } from "./pLimit";
+import { getVariablesFromFnLit, isVariable, printModule, printQuery } from "./projection_printer";
+import { writeSync } from "clipboardy";
+const limit = pLimit(1);
 
-// const limit = pLimit(1);
+export interface ClingoResult {
+  Solver: string,
+  Calls: number,
+  Call: { Witnesses: { Value: string[] }[] }[],
+  Models: { More: "yes" | "no", Number: number },
+  Result: "SATISFIABLE" | "UNSATISFIABLE",
+  Time: {
+    CPU: number,
+    Model: number,
+    Solve: number,
+    Total: number,
+    Unsat: number,
+  }
+}
+
+export type FlamingoValue = string | boolean | number;
+
+export type FlamingoQueryResult = Record<string, FlamingoValue>[];
+
+export const makeSession = (run: (program: string, models?: number, options?: string) => Promise<ClingoResult>, logic: string) => {
+  const program = printModule(parseModule(logic))
+  return (
+    queries: string[],
+    history: [string, Record<string, FlamingoValue>][],
+  ): Promise<Map<string,FlamingoQueryResult>> => limit(async () => {
+    const queryASP = queries.map((query) => {
+      const parsed = ALM.Query.tryParse(query) as FunctionLiteral[];
+      const variables = parsed.flatMap(getVariablesFromFnLit)
+        .flatMap(({ ret, args }) => {
+          return [
+            ...ret ?? [],
+            ...args?.flat(Infinity).filter(isVariable) ?? []
+          ]
+        }).map(x => x.value).join(",");
+      return `#show ("${query}", "${variables}",${variables}) : ${printQuery(query)}`;
+    }).join("\n");
+    const history_str = history.map(([action, attributes], i) => {
+      const name = `${action}${i}`;
+      const attrs = (() => {
+        const ret: string[] = [];
+        for (const k in attributes) {
+          const v = attributes[k];
+          ret.push(`holds(static(${k}(${name}), ${v})).`);
+        }
+        return ret.join("\n");
+      })();
+      return `
+      dom(${action}, ${name}).
+      ${attrs}
+      occurs(${name}, ${i}).`;
+    }).join("\n");
+    const asp = `
+    #const n = ${history.length}.
+    ${program}
+    ${history_str}
+    ${queryASP}`;
+    writeSync(asp);
+    const results = await run(asp, 1, `--const n=${history.length}`);
+    const answers = results.Call[0].Witnesses[0].Value;
+    console.log(answers);
+    const ret: Map<string, FlamingoQueryResult> = new Map();
+    for (const ans of answers) {
+      const [q, vars, ...vals] = ans.slice(1, -1)
+        .replace('"', "")
+        .split(",");
+      const res = vars.split(",").reduce((prev, curr, i) => {
+        const v = vals[i];
+        const k = curr.slice(1, -1);
+        const parsedVal = (() => {
+          if (v === "true" || v === "false") {
+            return Boolean(v);
+          } else if (!Number.isNaN(Number(v))) {
+            return Number(v);
+          } else {
+            return v;
+          }
+        })();
+        prev[k] = parsedVal;
+        return prev;
+      }, {} as Record<string, FlamingoValue>);
+
+      const qq = q.slice(0, -1);
+      if (ret.has(qq)) {
+        ret.set(qq, [...ret.get(qq),  res])
+      } else {
+        ret.set(qq, [res]);
+      }
+    }
+    return ret;
+  });
+}
+
+
 
 // export type FlamingoSession = { runtime: ReturnType<typeof Pl.create>; n: number };
 
-// export type FlamingoValue = string | boolean | number;
-
-// export type FlamingoQueryResult = Record<
-//   string,
-//   (FlamingoValue | FlamingoValue[]) | undefined
-// >;
 
 // let session: FlamingoSession;
 // let n: number;
@@ -37,18 +122,7 @@
 //           const v = curr[k];
 //           const val = (v === "true" || v === "false") ? Boolean(v) : v;
 
-//           if (k in prev) {
-//             if (
-//               Array.isArray(prev[k]) &&
-//               !(prev[k] as FlamingoValue[]).includes(val)
-//             ) {
-//               (prev[k] as FlamingoValue[]).push(val);
-//             } else if (prev[k] !== val) {
-//               prev[k] = [prev[k] as FlamingoValue, val];
-//             }
-//           } else {
-//             prev[k] = val;
-//           }
+          
 //         }
 //         return prev;
 //       }, {} as FlamingoQueryResult);

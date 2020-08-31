@@ -325,4 +325,14 @@ describe("Parsing", () => {
             "moduleName", "sorts", "statics", "fluents", "axioms", "initially"
         ]);
     });
+
+    it("Query", () => {
+        const result1 = ALM.Query.tryParse(`
+        active_filter = Filter,
+        visible(Todo),
+        active(Todo).
+        `);
+        expect(result1.map((x: any) => x.value.fn))
+            .to.have.members(["visible", "active", "active_filter"]);
+    });
 });

@@ -47,9 +47,15 @@ describe("Printing Projection", () => {
 
         expect(printAttributes(mod.sorts!).trim()).to.equal(unpad(`
         attr(f(X), Ret) :- dom(foo, X), dom(g, Ret).
+        dom(foo, X) :- holds(static(f(X), Ret)).
+        dom(g, Ret) :- holds(static(f(X), Ret)).
 
 
         attr(m(S0,S1,S2), Ret) :- dom(foo, S0), dom(n, S1), dom(p, S2), dom(o, Ret).
+        dom(foo, S0) :- holds(static(m(S0,S1,S2), Ret)).
+        dom(n, S1) :- holds(static(m(S0,S1,S2), Ret)).
+        dom(p, S2) :- holds(static(m(S0,S1,S2), Ret)).
+        dom(o, Ret) :- holds(static(m(S0,S1,S2), Ret)).
         `).trim());
     });
 

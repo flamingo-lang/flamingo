@@ -49,14 +49,20 @@ export function printAttributes({ value: sorts }: Sorts) {
                 if (args) {
                     const sort_var_combos = [firstSortName, ...args.map((x: { value: any; }) => x.value)]
                         .map((ident, i) => [ident, `S${i}`]);
-                    const vars = sort_var_combos.map(([_, x]) => x);
+                    const vars = sort_var_combos.map(([_, x]) => x).join(",");
                     const doms = sort_var_combos.map(([s, x]) => `dom(${s}, ${x})`).join(", ");
+                    const dom_ext_rules = sort_var_combos.map(([s, x]) =>
+                        `dom(${s}, ${x}) :- holds(static(${ident}(${vars}), Ret)).`).join("\n")
                     return unpad(`
-                    attr(${ident}(${vars.join(",")}), Ret) :- ${doms}, dom(${ret.value}, Ret).
+                    attr(${ident}(${vars}), Ret) :- ${doms}, dom(${ret.value}, Ret).
+                    ${dom_ext_rules}
+                    dom(${ret.value}, Ret) :- holds(static(${ident}(${vars}), Ret)).
                     `);
                 } else {
                     return unpad(`
                         attr(${ident}(X), Ret) :- dom(${firstSortName}, X), dom(${ret.value}, Ret).
+                        dom(${firstSortName}, X) :- holds(static(${ident}(X), Ret)).
+                        dom(${ret.value}, Ret) :- holds(static(${ident}(X), Ret)).
                         `);
                 }
             })
@@ -105,11 +111,11 @@ export function printFluents({ basic, defined }: Fluents) {
     ].flat(Infinity).join("\n");
 }
 
-function isVariable(x: any): x is Variable {
+export function isVariable(x: any): x is Variable {
     return typeof x === "object" && x.name === Nodes.Variable;
 }
 
-function getVariablesFromFnLit(fnLit: FunctionLiteral): { args?: [Variable, number][][], ret: Variable[] | null } {
+export function getVariablesFromFnLit(fnLit: FunctionLiteral): { args?: [Variable, number][][], ret: Variable[] | null } {
     const { args, ret } = fnLit.value;
     return {
         ret: (() => {
@@ -398,7 +404,6 @@ export function printInitially(mod: ModuleAST): string {
 export function printModule(mod: ModuleAST): string {
     return unpad(`
     #defined occurs/2.
-    #const n = 1.
 
     step(0..n).
 
@@ -497,25 +502,31 @@ export function printModule(mod: ModuleAST): string {
     holds(static(link(actions), universe)).
 
     holds(static(instance(X, S), true)) :- dom(S, X).
+
+    #show.
+
+    dom(new_todo, new_todo0).
+    holds(static(new_text(new_todo0), todo1)).
+    occurs(new_todo0, 0).
+
+    dom(new_todo, new_todo1).
+    holds(static(new_text(new_todo1), todo2)).
+    occurs(new_todo1, 1).
+
+    #show (holds, F, V) : holds(F, V, n).
+    #const n = 3.
+
+   #show (body, R, B) : body(R, B).
+   #show (law, L) : dlaw(L).
+   % #show (dom, S, X) : dom(S, X).
     `)
 }
 
-export function printQuery(n: number, query: string) {
+export function printQuery(query: string) {
     const literals = ALM.Query.tryParse(query) as FunctionLiteral[];
     const holds = literals.map(({ value: { fn, args, ret } }) => {
         const args_str = args?.length ? `(${args.map(printTerm).join(", ")})` : "";
-        return `holds(${fn}${args_str}, ${printTerm(ret)}, ${n})`
+        return `holds(${fn}${args_str}, ${printTerm(ret)}, n)`
     }).join(", ");
     return `${holds}.`
 }
-
-/*
-
-
-
-
-
-
-
-
-*/
