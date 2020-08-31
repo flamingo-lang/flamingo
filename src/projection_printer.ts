@@ -397,24 +397,10 @@ export function printInitially(mod: ModuleAST): string {
 
 export function printModule(mod: ModuleAST): string {
     return unpad(`
-    :-use_module(library(lists)).
-    :-dynamic(time/1).
-    :-dynamic(occurs/2).
-    :-dynamic(holds/3).
-    :-dynamic(nholds/3).
-    :-dynamic(holds/1).
-    :-dynamic(dom/2).
-    :-dynamic(body_satisfied/2).
-    
-    :-discontiguous(holds/3).
-    :-discontiguous(holds/1).
-    :-discontiguous(nholds/3).
-    :-discontiguous(dom/2).
-    :-discontiguous(body/2).
-    :-discontiguous(head/2).
-    :-discontiguous(dlaw/1).
-    :-discontiguous(action/2).
-    
+    #defined occurs/2.
+    #const n = 1.
+
+    step(0..n).
 
     ${mod.sorts ? printSortNames(mod.sorts) : ""}
     
@@ -432,76 +418,76 @@ export function printModule(mod: ModuleAST): string {
 
     ${printInitially(mod)}
 
-    count(X, E, N) :- findall(X, E, L), length(L, N).
+    body_satisfied(R, I) :-
+        step(I),
+        body(R, _),
+        #count {F : body(R,pos_fluent(F,V)), fluent(_,F,V) } = FPB,
+        #count { F : body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, I) } = FPB.
+        %#count { F : body(R,neg_fluent(F,V)), fluent(_,F,V) } = FNB,
+        %#count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), -holds(F,V,I) } = FNB,
+        %#count { F : body(R,pos_static(F,V)) } = SPB,
+        %#count { F : body(R,pos_static(F,V)), holds(static(F,V)) } = SPB,
+        %#count { F : body(R,neg_static(F,V)) } = SNB,
+        %#count { F : body(R,neg_static(F,V)), not holds(static(F,V)) } = SNB,
+        %#count { E : body(R, gt(A, B)) } = GT,
+        %#count { E : body(R, gt(A, B)), A > B } = GT,
+        %#count { E : body(R, gte(A, B)) } = GTE,
+        %#count { E : body(R, gte(A, B)), A >= B } = GTE,
+        %#count { E : body(R, lt(A, B)) } = LT,
+        %#count { E : body(R, lt(A, B)), A < B } = LT,
+        %#count { E : body(R, lte(A, B)) } = LTE,
+        %#count { E : body(R, lte(A, B)), A <= B } = LTE,
+        %#count { E : body(R, eq(A, B)) } = EQ,
+        %#count { E : body(R, eq(A, B)), A = B  } = EQ,
+        %#count { E : body(R, neq(A, B)) } = NEQ,
+        %#count { E : body(R, neq(A, B)), A != B  } = NEQ.
 
-    body_satisfied(R,T) :-
-        count(F, (body(R,pos_fluent(F,V)), fluent(_,F,V)), FPB),
-        count( F, (body(R,pos_fluent(F,V)), fluent(_,F,V), holds(F, V, T) ), FPB),
-
-        count( F, (body(R,neg_fluent(F,V)), fluent(_,F,V)), FNB),
-        count( F, (body(R,neg_fluent(F,V)), fluent(_, F,V), nholds(F,V,T)), FNB),
-
-        count( F, (body(R,pos_static(F,V))), SPB),
-        count( F, (body(R,pos_static(F,V)), holds(static(F,V))), SPB),
-
-        count( F, (body(R,neg_static(F,V))), SNB),
-        count( F, (body(R,neg_static(F,V)), \\+ holds(static(F,V))), SNB),
-
-        count( E, (body(R, gt(A, B))),  GT),
-        count( E, (body(R, gt(A, B)), A > B),  GT),
-
-        count( E, (body(R, gte(A, B))),  GTE),
-        count( E, (body(R, gte(A, B)), A >= B),  GTE),
-
-        count( E, (body(R, lt(A, B))),  LT),
-        count( E, (body(R, lt(A, B)), A < B),  LT),
-
-        count( E, (body(R, lte(A, B))),  LTE),
-        count( E, (body(R, lte(A, B)), A =< B),  LTE),
-
-        count( E, (body(R, eq(A, B))),  EQ),
-        count( E, (body(R, eq(A, B)), A =:= B ),  EQ),
-
-        count( E, (body(R, neq(A, B))),  NEQ),
-        count( E, (body(R, neq(A, B)), A =\= B ),  NEQ).
-
-    holds_next(F, V, T) :-
+    holds(F, V, I + 1) :-
+        step(I),
+        dlaw(R),
+        action(R, X),
+        occurs(X, I),
+        body_satisfied(R, I),
+        head(R, pos_fluent(F,V)),
+        I < n.
+    
+    -holds(F, V, I + 1) :-
+        step(I),
         dlaw(R),
         action(R, X),
         occurs(X, T),
         body_satisfied(R, T),
-        head(R, pos_fluent(F,V)), !.
+        head(R, neg_fluent(F,V)),
+        I < n.
     
-    nholds_next(F, V, T) :-
-        dlaw(R),
-        action(R, X),
-        occurs(X, T),
-        body_satisfied(R, T),
-        head(R, neg_fluent(F,V)), !.
-    
-    holds(F, V, T) :-
+    holds(F, V, I) :-
         state_constraint(R),
         head(R, pos_fluent(F,V)),
-        body_satisfied(R, T).
+        body_satisfied(R, I).
     
-    nholds(F, V, T) :-
+    -holds(F, V, I) :-
         state_constraint(R),
-        head(R, neg_fluent(F,V)),
-        body_satisfied(R, T).
+        head(R, neg_fluent(F, V)),
+        body_satisfied(R, I).
     
-    nholds(F, V, T) :- fluent(defined, F, V), \\+ holds(F, V, T).
+    -holds(F, V, I) :-
+        step(I),
+        fluent(defined, F, V),
+        not holds(F, V, I).
 
-    holds_inertia(F, V, T2) :-
-	    T1 is T2 - 1,
-        holds(F, V, T1),
+    holds(F, V, I + 1) :-
+        step(I),
         fluent(basic, F, V),
-        \\+ nholds(F, V, T2). 
+        holds(F, V, I),
+        not -holds(F, V, I + 1),
+        I < n. 
 
-    nholds_inertia(F, V, T2) :-
-	    T1 is T2 - 1,
-        holds(F, V, T1),
+    -holds(F, V, I + 1) :-
+        step(I),
         fluent(basic, F, V),
-        \\+ nholds(F, V, T2). 
+        -holds(F, V, I),
+        not holds(F, V, I + 1),
+        I < n. 
 
     dom(S1, X) :- holds(static(link(S2), S1)), dom(S2, X).
 

@@ -12,9 +12,12 @@
     "@types/node": "^14.6.1",
     "@types/parsimmon": "^1.10.2",
     "chai": "^4.2.0",
+    "clipboardy": "^2.3.0",
     "mocha": "^8.1.1",
+    "node-clingo-wasm": "^0.0.2",
     "ts-mocha": "^7.0.0",
-    "typescript": "^3.9.7"
+    "typescript": "^3.9.7",
+    "wasm-clingo": "^0.3.0"
   },
   "source": "src/index.ts",
   "types": "dist/src/index.d.ts",

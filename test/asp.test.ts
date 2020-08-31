@@ -1,19 +1,10 @@
-import Pl from "../src/tau-prolog";
 import { readFileSync } from "fs";
 import { printModule } from "../src/projection_printer";
 import { parseModule } from "../src/parse";
 import { writeFileSync } from "fs";
+import { writeSync } from "clipboardy";
 
 describe("Tau Parsing", () => {
-    it("Should work on the static file", () => {
-        const logic = readFileSync("./test/prolog-projection.lp", { encoding: "utf-8" });
-        const s = Pl.create();
-        const parseResult = s.consult(logic);
-        if (parseResult !== true) {
-            throw new Error(parseResult.toString());
-        }
-    });
-
     it("Should print todomvc", () => {
         const alm = parseModule(`
         module todomvc
@@ -106,13 +97,9 @@ describe("Tau Parsing", () => {
             active_filter = all.
         `);
 
-        const logic = printModule(alm);
-        writeFileSync("./prolog-test.lp", logic);
-        const s = Pl.create();
-        const parseResult = s.consult(logic);
-        if (parseResult !== true) {
-            throw new Error(parseResult.toString());
-        }
+        const asp = printModule(alm);
+        writeFileSync("./prolog-test.lp", asp);
+        writeSync(asp);
     });
 });
             // visible(Todo) if completed(Todo), active_filter = completed.
