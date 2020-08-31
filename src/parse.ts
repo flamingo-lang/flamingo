@@ -303,7 +303,15 @@ export const ALM = P.createLanguage({
         .map(([moduleName, [sorts, statics, fluents, axioms, initially]]) => ({
             moduleName, sorts, statics, fluents, axioms, initially
         })),
-    Query: r => commaSeparated(r.FunctionLiteral).skip(P.string(".").skip(P.optWhitespace))
+    Query: r => commaSeparated(r.FunctionLiteral).skip(P.string(".").skip(P.optWhitespace)),
+    String: r => P.regexp(/"((?:\\.|.)*?)"/, 1),
+    QueryVars: r => commaSeparated(r.Variable).wrap(P.string('"'), P.string('"')),
+    QueryResult: r => P.seq(
+        // r.Query.wrap(P.string('"'), P.string('"')).skip(P.string(",")),
+        r.String.skip(P.string(",")),
+        r.QueryVars.skip(P.string(",")),
+        commaSeparated(P.alt(r.Integer, r.Boolean, r.String, r.Identifier))
+    ).wrap(P.string("("), P.string(")"))
 });
 
 export function parseModule(mod: string): ModuleAST {

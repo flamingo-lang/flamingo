@@ -1,7 +1,6 @@
 import { ALM, FunctionLiteral, parseModule } from "./parse";
 import { pLimit } from "./pLimit";
 import { getVariablesFromFnLit, isVariable, printModule, printQuery } from "./projection_printer";
-import { writeSync } from "clipboardy";
 const limit = pLimit(1);
 
 export interface ClingoResult {
@@ -30,7 +29,7 @@ export const makeSession = (run: (program: string, models?: number, options?: st
   return (
     queries: string[],
     history: FlamingoAction[],
-  ): Promise<Map<string,FlamingoQueryResult>> => limit(async () => {
+  ): Promise<Map<string, FlamingoQueryResult>> => limit(async () => {
     const queryASP = queries.map((query) => {
       const parsed = ALM.Query.tryParse(query) as FunctionLiteral[];
       const variables = parsed.flatMap(getVariablesFromFnLit)
@@ -57,47 +56,40 @@ export const makeSession = (run: (program: string, models?: number, options?: st
       ${attrs}
       occurs(${name}, ${i}).`;
     }).join("\n");
-    
+
     const asp = `
     #const n = ${history.length}.
     ${program}
     ${history_str}
     ${queryASP}`;
-    writeSync(asp);
     const results = await run(asp, 1, `--const n=${history.length}`);
     const answers = results.Call[0].Witnesses[0].Value;
     const ret: Map<string, FlamingoQueryResult> = new Map();
     for (const ans of answers) {
-      const [q, rest] = ans.slice(0, -1).split('","');
-      const [vars0, vals0] = rest.split("\",");
-      if (q === "Duplicate values found") {
+      if (ans.includes("Duplicate values found")) {
         throw new Error(ans);
       }
-      const vars = vars0.split(",");
-      const vals = vals0.split(',');
-      console.log("vars", vars);
-      console.log("vals", vals);
-      console.log("q", q);
-      const res = vars.reduce((prev, curr, i) => {
-        const v = vals[i];
-        const parsedVal = (() => {
-          if (v === "true" || v === "false") {
-            return Boolean(v);
-          } else if (!Number.isNaN(Number(v))) {
-            return Number(v);
-          } else {
-            return v;
-          }
-        })();
-        prev[curr] = parsedVal;
-        return prev;
-      }, {} as Record<string, FlamingoValue>);
-      
-      const qq = q.slice(2);
-      if (ret.has(qq)) {
-        ret.set(qq, [...ret.get(qq),  res])
+      const [query, vars, vals] = ALM.QueryResult.tryParse(ans);
+      const res = (vars.map((x: any) => x.value) as string[])
+        .reduce((prev, curr, i) => {
+          const v = vals[i];
+          const parsedVal = (() => {
+            if (v === "true" || v === "false") {
+              return Boolean(v);
+            } else if (!Number.isNaN(Number(v))) {
+              return Number(v);
+            } else {
+              return v;
+            }
+          })();
+          prev[curr] = parsedVal;
+          return prev;
+        }, {} as Record<string, FlamingoValue>);
+
+      if (ret.has(query)) {
+        ret.set(query, [...ret.get(query), res])
       } else {
-        ret.set(qq, [res]);
+        ret.set(query, [res]);
       }
     }
     return ret;
