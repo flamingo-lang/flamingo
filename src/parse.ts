@@ -102,7 +102,7 @@ export const ALM = P.createLanguage({
     False: () => P.string("false"),
     Boolean : r => P.alt(r.True, r.False)
         .desc("a boolean")
-        .map(Boolean)
+        .map(x => Boolean(x.value))
         .node(Nodes.Boolean),
     Integer: () => P.regexp(/(\-)?[0-9]+/).map(x => Number(x)).desc("an integer"),
     Identifier: () => P.regexp(/[a-z]+[A-Za-z0-9_]*/).desc("an identifier").node(Nodes.Identifier),

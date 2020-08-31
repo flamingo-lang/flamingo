@@ -58,11 +58,12 @@ export const makeSession = (run: (program: string, models?: number, options?: st
     }).join("\n");
 
     const asp = `
-    #const n = ${history.length}.
+    #const n = ${history.length + 1}.
     ${program}
     ${history_str}
     ${queryASP}`;
-    const results = await run(asp, 1, `--const n=${history.length}`);
+
+    const results = await run(asp, 1);
     const answers = results.Call[0].Witnesses[0].Value;
     const ret: Map<string, FlamingoQueryResult> = new Map();
     for (const ans of answers) {
@@ -74,10 +75,11 @@ export const makeSession = (run: (program: string, models?: number, options?: st
         .reduce((prev, curr, i) => {
           const v = vals[i];
           const parsedVal = (() => {
-            if (v === "true" || v === "false") {
-              return Boolean(v);
-            } else if (!Number.isNaN(Number(v))) {
+            
+            if (!Number.isNaN(Number(v))) {
               return Number(v);
+            } else if(typeof v === "object"){
+                return v.value;
             } else {
               return v;
             }
