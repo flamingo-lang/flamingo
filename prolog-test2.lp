@@ -1,5 +1,5 @@
 
-    #const n = 8.
+    #const n = 9.
     
 #defined occurs/2.
 #defined body/2.
@@ -9,8 +9,8 @@ step(0..n).
 sort(todos).
 
 holds(static(link(todos), integers)).
-dom(todos, 1). dom(todos, 2). dom(todos, 3).
-holds(static(is_a(1), todos)). holds(static(is_a(2), todos)). holds(static(is_a(3), todos)).
+dom(todos, 1). dom(todos, 2). dom(todos, 3). dom(todos, 4).
+holds(static(is_a(1), todos)). holds(static(is_a(2), todos)). holds(static(is_a(3), todos)). holds(static(is_a(4), todos)).
 
 sort(filters).
 dom(filters, all). dom(filters, active). dom(filters, completed).
@@ -68,9 +68,9 @@ dom(edit_todo, X) :- holds(static(edit_text(X), Ret)).
 dom(strings, Ret) :- holds(static(edit_text(X), Ret)).
 
 
-attr(state(X), Ret) :- dom(set_all, X), dom(todo_state, Ret).
-dom(set_all, X) :- holds(static(state(X), Ret)).
-dom(todo_state, Ret) :- holds(static(state(X), Ret)).
+attr(set_completed(X), Ret) :- dom(set_all, X), dom(booleans, Ret).
+dom(set_all, X) :- holds(static(set_completed(X), Ret)).
+dom(booleans, Ret) :- holds(static(set_completed(X), Ret)).
 
 
 
@@ -139,63 +139,55 @@ body(causal_law1(A, Text, Todo), pos_static(new_text(A), Text)) :- dom(actions, 
 body(causal_law1(A, Text, Todo), pos_fluent(next_todo, Todo)) :- dom(actions, A), dom(strings, Text), dom(todos, Todo).
 
 
-dlaw(causal_law2(A, Todo)) :- dom(actions, A), dom(todos, Todo).
-action(causal_law2(A, Todo), A) :- dom(actions, A), dom(todos, Todo).
-head(causal_law2(A, Todo), pos_fluent(completed(Todo), true)) :- dom(actions, A), dom(todos, Todo).
+dlaw(causal_law2(A, Todo, Completed, Comp)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
+action(causal_law2(A, Todo, Completed, Comp), A) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
+head(causal_law2(A, Todo, Completed, Comp), pos_fluent(completed(Todo), Comp)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
 
-body(causal_law2(A, Todo), pos_static(instance(A, toggle_all), true)) :- dom(actions, A), dom(todos, Todo).
-body(causal_law2(A, Todo), pos_static(state(A), complete)) :- dom(actions, A), dom(todos, Todo).
-
-
-dlaw(causal_law3(A, Todo)) :- dom(actions, A), dom(todos, Todo).
-action(causal_law3(A, Todo), A) :- dom(actions, A), dom(todos, Todo).
-head(causal_law3(A, Todo), neg_fluent(completed(Todo), true)) :- dom(actions, A), dom(todos, Todo).
-
-body(causal_law3(A, Todo), pos_static(instance(A, toggle_all), true)) :- dom(actions, A), dom(todos, Todo).
-body(causal_law3(A, Todo), pos_static(state(A), incomplete)) :- dom(actions, A), dom(todos, Todo).
+body(causal_law2(A, Todo, Completed, Comp), pos_static(instance(A, toggle_todo), true)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
+body(causal_law2(A, Todo, Completed, Comp), pos_static(target(A), Todo)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
+body(causal_law2(A, Todo, Completed, Comp), pos_fluent(completed(Todo), Completed)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
+body(causal_law2(A, Todo, Completed, Comp), pos_static(complement(Completed), Comp)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
 
 
-dlaw(causal_law4(A, Todo, Completed, Comp)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
-action(causal_law4(A, Todo, Completed, Comp), A) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
-head(causal_law4(A, Todo, Completed, Comp), pos_fluent(completed(Todo), Comp)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
+dlaw(causal_law3(A, Todo, Text)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
+action(causal_law3(A, Todo, Text), A) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
+head(causal_law3(A, Todo, Text), pos_fluent(text(Todo), Text)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
 
-body(causal_law4(A, Todo, Completed, Comp), pos_static(instance(A, toggle_todo), true)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
-body(causal_law4(A, Todo, Completed, Comp), pos_static(target(A), Todo)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
-body(causal_law4(A, Todo, Completed, Comp), pos_fluent(completed(Todo), Completed)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
-body(causal_law4(A, Todo, Completed, Comp), pos_static(complement(Completed), Comp)) :- dom(actions, A), dom(todos, Todo), dom(booleans, Completed), dom(booleans, Comp).
+body(causal_law3(A, Todo, Text), pos_static(instance(A, edit_todo), true)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
+body(causal_law3(A, Todo, Text), pos_static(target(A), Todo)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
+body(causal_law3(A, Todo, Text), pos_static(edit_text(A), Text)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
 
 
-dlaw(causal_law5(A, Todo, Text)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
-action(causal_law5(A, Todo, Text), A) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
-head(causal_law5(A, Todo, Text), pos_fluent(text(Todo), Text)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
+dlaw(causal_law4(A, Todo)) :- dom(actions, A), dom(todos, Todo).
+action(causal_law4(A, Todo), A) :- dom(actions, A), dom(todos, Todo).
+head(causal_law4(A, Todo), neg_fluent(active(Todo), true)) :- dom(actions, A), dom(todos, Todo).
 
-body(causal_law5(A, Todo, Text), pos_static(instance(A, edit_todo), true)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
-body(causal_law5(A, Todo, Text), pos_static(target(A), Todo)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
-body(causal_law5(A, Todo, Text), pos_static(edit_text(A), Text)) :- dom(actions, A), dom(todos, Todo), dom(strings, Text).
+body(causal_law4(A, Todo), pos_static(instance(A, destroy_todo), true)) :- dom(actions, A), dom(todos, Todo).
+body(causal_law4(A, Todo), pos_static(target(A), Todo)) :- dom(actions, A), dom(todos, Todo).
+
+
+dlaw(causal_law5(A, Completed, Todo)) :- dom(actions, A), dom(booleans, Completed), dom(todos, Todo).
+action(causal_law5(A, Completed, Todo), A) :- dom(actions, A), dom(booleans, Completed), dom(todos, Todo).
+head(causal_law5(A, Completed, Todo), pos_fluent(completed(Todo), Completed)) :- dom(actions, A), dom(booleans, Completed), dom(todos, Todo).
+
+body(causal_law5(A, Completed, Todo), pos_static(instance(A, set_all), true)) :- dom(actions, A), dom(booleans, Completed), dom(todos, Todo).
+body(causal_law5(A, Completed, Todo), pos_static(set_completed(A), Completed)) :- dom(actions, A), dom(booleans, Completed), dom(todos, Todo).
 
 
 dlaw(causal_law6(A, Todo)) :- dom(actions, A), dom(todos, Todo).
 action(causal_law6(A, Todo), A) :- dom(actions, A), dom(todos, Todo).
 head(causal_law6(A, Todo), neg_fluent(active(Todo), true)) :- dom(actions, A), dom(todos, Todo).
 
-body(causal_law6(A, Todo), pos_static(instance(A, destroy_todo), true)) :- dom(actions, A), dom(todos, Todo).
-body(causal_law6(A, Todo), pos_static(target(A), Todo)) :- dom(actions, A), dom(todos, Todo).
+body(causal_law6(A, Todo), pos_static(instance(A, clear_completed), true)) :- dom(actions, A), dom(todos, Todo).
+body(causal_law6(A, Todo), pos_fluent(completed(Todo), true)) :- dom(actions, A), dom(todos, Todo).
 
 
-dlaw(causal_law7(A, Todo)) :- dom(actions, A), dom(todos, Todo).
-action(causal_law7(A, Todo), A) :- dom(actions, A), dom(todos, Todo).
-head(causal_law7(A, Todo), neg_fluent(active(Todo), true)) :- dom(actions, A), dom(todos, Todo).
+dlaw(causal_law7(A, F)) :- dom(actions, A), dom(filters, F).
+action(causal_law7(A, F), A) :- dom(actions, A), dom(filters, F).
+head(causal_law7(A, F), pos_fluent(active_filter, F)) :- dom(actions, A), dom(filters, F).
 
-body(causal_law7(A, Todo), pos_static(instance(A, clear_completed), true)) :- dom(actions, A), dom(todos, Todo).
-body(causal_law7(A, Todo), pos_fluent(completed(Todo), true)) :- dom(actions, A), dom(todos, Todo).
-
-
-dlaw(causal_law8(A, F)) :- dom(actions, A), dom(filters, F).
-action(causal_law8(A, F), A) :- dom(actions, A), dom(filters, F).
-head(causal_law8(A, F), pos_fluent(active_filter, F)) :- dom(actions, A), dom(filters, F).
-
-body(causal_law8(A, F), pos_static(instance(A, set_active_filter), true)) :- dom(actions, A), dom(filters, F).
-body(causal_law8(A, F), pos_static(filter(A), F)) :- dom(actions, A), dom(filters, F).
+body(causal_law7(A, F), pos_static(instance(A, set_active_filter), true)) :- dom(actions, A), dom(filters, F).
+body(causal_law7(A, F), pos_static(filter(A), F)) :- dom(actions, A), dom(filters, F).
 
 
 holds(static(complement(true), false)).
@@ -210,7 +202,7 @@ body_satisfied(R, I) :-
     #count { F : body(R, pos_fluent(F,V)), fluent(_,F,V) } = FPB,
     #count { F : body(R, pos_fluent(F,V)), fluent(_,F,V), holds(F, V, I) } = FPB,
     #count { F : body(R,neg_fluent(F,V)), fluent(_,F,V) } = FNB,
-    #count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), nholds(F,V,I) } = FNB,
+    #count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), not holds(F,V,I) } = FNB,
     #count { F : body(R, pos_static(F,V)) } = SPB,
     #count { F : body(R, pos_static(F,V)), holds(static(F,V)) } = SPB,
     #count { F : body(R,neg_static(F,V)) } = SNB,
@@ -319,21 +311,24 @@ holds(static(instance(X, S), true)) :- dom(S, X).
       holds(static(new_text(new_todo2), "Formally verify them with Flamingo")).
       occurs(new_todo2, 2).
 
-      dom(edit_todo, edit_todo3).
-      holds(static(target(edit_todo3), 1)).
-holds(static(edit_text(edit_todo3), edited)).
-      occurs(edit_todo3, 3).
+      dom(set_active_filter, set_active_filter3).
+      holds(static(filter(set_active_filter3), active)).
+      occurs(set_active_filter3, 3).
 
-      dom(toggle_todo, toggle_todo4).
-      holds(static(target(toggle_todo4), 1)).
-      occurs(toggle_todo4, 4).
+      dom(set_active_filter, set_active_filter4).
+      holds(static(filter(set_active_filter4), completed)).
+      occurs(set_active_filter4, 4).
 
-      dom(destroy_todo, destroy_todo5).
-      holds(static(target(destroy_todo5), 2)).
-      occurs(destroy_todo5, 5).
+      dom(set_active_filter, set_active_filter5).
+      holds(static(filter(set_active_filter5), active)).
+      occurs(set_active_filter5, 5).
 
-      dom(clear_completed, clear_completed6).
-      
-      occurs(clear_completed6, 6).
+      dom(toggle_todo, toggle_todo6).
+      holds(static(target(toggle_todo6), 1)).
+      occurs(toggle_todo6, 6).
+
+      dom(set_active_filter, set_active_filter7).
+      holds(static(filter(set_active_filter7), completed)).
+      occurs(set_active_filter7, 7).
     #show ("visible(Todo), text(Todo) = Text.", "Todo,Text,Todo",Todo,Text,Todo) : holds(visible(Todo), true, n), holds(text(Todo), Text, n).
 #show ("completed(Todo) = Completed.", "Completed,Todo",Completed,Todo) : holds(completed(Todo), Completed, n).

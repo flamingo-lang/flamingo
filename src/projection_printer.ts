@@ -437,7 +437,7 @@ export function printModule(mod: ModuleAST): string {
         #count { F : body(R, pos_fluent(F,V)), fluent(_,F,V) } = FPB,
         #count { F : body(R, pos_fluent(F,V)), fluent(_,F,V), holds(F, V, I) } = FPB,
         #count { F : body(R,neg_fluent(F,V)), fluent(_,F,V) } = FNB,
-        #count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), nholds(F,V,I) } = FNB,
+        #count { F : body(R,neg_fluent(F,V)), fluent(_, F,V), not holds(F,V,I) } = FNB,
         #count { F : body(R, pos_static(F,V)) } = SPB,
         #count { F : body(R, pos_static(F,V)), holds(static(F,V)) } = SPB,
         #count { F : body(R,neg_static(F,V)) } = SNB,
