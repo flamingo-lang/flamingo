@@ -9,7 +9,6 @@ export const Nodes = {
     Term: "Term",
     FunctionTerm: "FunctionTerm",
     FunctionLiteral: "FunctionLiteral",
-    _FunctionLiteralInput: "FunctionLiteralInput",
     Statics: "Statics",
     DefinedFluents: "DefinedFluents",
     BasicFluents: "BasicFluents",
@@ -42,7 +41,7 @@ export type FunctionAssignment = P.Node<"FunctionAssignment", {
     ret: Term
 }>;
 /** Only used internally for type safety. */
-type FunctionLiteralInput = P.Node<"FunctionLiteral", FunctionAssignment | FunctionTerm | [("-" | null), Identifier]>
+type FunctionLiteralInput = FunctionAssignment | FunctionTerm | [("-" | null), Identifier];
 export type FunctionLiteral = P.Node<"FunctionLiteral", {
     fn: string,
     args?: Term[],
@@ -73,34 +72,30 @@ export type Fact = P.Node<"Fact", FunctionLiteral>;
 export type Axiom = CausalLaw | StateConstraint | ExecutabilityCondition | Fact;
 export type Initially = Fact[];
 export type ModuleAST = {
-    sorts: Sorts | null ,
+    sorts: Sorts | null,
     statics: Statics | null,
     fluents: Fluents | null,
     axioms: Axioms | null;
     initially: Initially | null;
 };
 
-const jump = (a: P.Parser<any>, b: P.Parser<any>) =>
-    P.seq(a, b).map(x => x[1]);
-
 const commaSeparated = (p: P.Parser<any>) => P.sepBy1(p, P.regexp(/\s*,\s*/)).skip(P.optWhitespace);
 
-const section = (header: string, p: P.Parser<any>) => jump(
-    P.string(header).wrap(P.optWhitespace, P.optWhitespace),
-    p.skip(P.optWhitespace),
-);
+const section = (header: string, p: P.Parser<any>) =>
+    P.string(header)
+        .trim(P.optWhitespace)
+        .then(p.skip(P.optWhitespace));
 
 const sepByWhiteSpace = (...ps: P.Parser<any>[]) =>
     P.seq(
         P.optWhitespace,
         ...ps.map(x => x.skip(P.optWhitespace))
-    )
-        .map(([head, ...tail]) => tail)
+    ).map(([head, ...tail]) => tail)
 
 export const ALM = P.createLanguage({
     True: () => P.string("true"),
     False: () => P.string("false"),
-    Boolean : r => P.alt(r.True, r.False)
+    Boolean: r => P.alt(r.True, r.False)
         .desc("a boolean")
         .map(x => x === "true")
         .node(Nodes.Boolean),
@@ -126,82 +121,75 @@ export const ALM = P.createLanguage({
         r.Identifier,
         commaSeparated(r.BasicTerm)
             .wrap(P.string("("), P.string(")")))
-        .node(Nodes.FunctionTerm)
-        .map(({ value: [negated, fn, args], ...node }) => ({
-            value: { negated: Boolean(negated), fn, args },
-            ...node
-        })),
+        .map(([negated, fn, args]) => ({
+            negated: Boolean(negated),
+            fn,
+            args
+        })).node(Nodes.FunctionTerm),
     FunctionAssignment: r => sepByWhiteSpace(
         P.alt(r.FunctionTerm, r.Identifier),
         P.alt(r.Eq, r.Neq),
         r.Term
     )
-        .node(Nodes.FunctionAssignment)
-        .map(({ value: [fnTerm, operator, ret], ...node }) => ({
-            value: { fnTerm, operator, ret },
-            ...node
-        })),
+        .map(([fnTerm, operator, ret]) => ({
+            fnTerm,
+            operator,
+            ret
+        }))
+        .node(Nodes.FunctionAssignment),
     FunctionLiteral: r => P.alt(
         r.FunctionAssignment,
         r.FunctionTerm,
         P.seq(r.Negation, r.Identifier))
-        .node(Nodes._FunctionLiteralInput)
-        .map((_n): FunctionLiteral => {
+        .map((_n): FunctionLiteral["value"] => {
             const n = _n as unknown as FunctionLiteralInput;
             switch (true) {
-                case "name" in n.value && n.value.name === Nodes.FunctionAssignment: {
-                    const { value: { fnTerm, ret, operator } } = n.value as FunctionAssignment;
+                case "name" in n && n.name === Nodes.FunctionAssignment: {
+                    const { fnTerm, ret, operator } = (n as FunctionAssignment).value;
                     if (fnTerm.name === "FunctionTerm") {
                         const { args, fn, negated } = fnTerm.value;
                         // Some day we should throw an error forbidding a term to be negated
                         // in two places. 
                         const neg = negated || operator === "!=";
                         return {
-                            ...n,
-                            name: Nodes.FunctionLiteral,
-                            value: {
-                                negated: neg,
-                                fn: fn.value,
-                                args,
-                                ret,
-                                node: n.value as FunctionAssignment
-                            }
+                            negated: neg,
+                            fn: fn.value,
+                            args,
+                            ret,
+                            node: n as FunctionAssignment
                         };
                     } else {
                         return {
-                            ...n,
-                            name: Nodes.FunctionLiteral,
-                            value: {
-                                negated: operator === "!=",
-                                fn: fnTerm.value,
-                                args: [],
-                                ret,
-                                node: n.value as FunctionAssignment
-                            }
+                            negated: operator === "!=",
+                            fn: fnTerm.value,
+                            args: [],
+                            ret,
+                            node: n as FunctionAssignment
                         };
                     }
                 }
-                case "name" in n.value && n.value.name === Nodes.FunctionTerm: {
-                    const { value: { fn: { value: fn }, args, negated } } = n.value as FunctionTerm;
+                case "name" in n && n.name === Nodes.FunctionTerm: {
+                    const { fn: { value: fn }, args, negated } = (n as FunctionTerm).value;
                     return {
-                        ...n,
-                        name: Nodes.FunctionLiteral,
-                        value: { negated, fn, args: args, ret: true, node: n.value as FunctionTerm }
+                        negated, fn, args: args, ret: true, node: n as FunctionTerm
                     };
                 }
-                case Array.isArray(n.value): {
-                    const [negated, ident] = n.value as ["=" | null, Identifier];
+                case Array.isArray(n): {
+                    const [negated, ident] = (n as ["=" | null, Identifier]);
                     return {
-                        ...n,
-                        name: Nodes.FunctionLiteral,
-                        value: { negated: !!negated, fn: ident.value, args: [], ret: true, node: ident }
+                        negated: !!negated,
+                        fn: ident.value,
+                        args: [],
+                        ret: true,
+                        node: ident
                     };
                 }
 
                 default:
                     throw new Error("unreachable");
             }
-        }),
+        })
+        .node(Nodes.FunctionLiteral),
     ArithmeticExpression: r => sepByWhiteSpace(r.Term, r.ArithmeticRel, r.Term)
         .node(Nodes.ArithmeticExpression),
     Literal: r => P.alt(
@@ -218,22 +206,16 @@ export const ALM = P.createLanguage({
         commaSeparated(r.FunctionLiteral),
         P.string("if"),
         r.Body,
-    ).node(Nodes.CausalLaw)
-        .map(({ value: [occurs, head, _, body], ...node }) => ({
-            value: { occurs, head, body },
-            ...node
-        })),
+    ).map(([occurs, head, _, body]) => ({
+        occurs, head, body
+    })).node(Nodes.CausalLaw),
     SCHead: r => P.alt(P.string("false"), r.FunctionLiteral),
     StateConstraint: r => sepByWhiteSpace(
         r.SCHead,
         P.string("if"),
         r.Body,
-    )
-        .node(Nodes.StateConstraint)
-        .map(({ value: [head, _, body], ...node }) => ({
-            value: { head, body },
-            ...node
-        })),
+    ).map(([head, _, body]: any) => ({ head, body }))
+        .node(Nodes.StateConstraint),
     ExecutabilityCondition: r => sepByWhiteSpace(
         P.string("impossible"),
         r.Occurs,
@@ -262,7 +244,7 @@ export const ALM = P.createLanguage({
     ),
     Attributes: r => section(
         "attributes",
-        r.FunctionDecl.wrap(P.optWhitespace, P.optWhitespace).atLeast(1)
+        r.FunctionDecl.trim(P.optWhitespace).atLeast(1)
     ),
     Arguments: r => P.sepBy1(r.Identifier, P.regexp(/\s*x\s*/))
         .skip(P.optWhitespace)
@@ -277,11 +259,8 @@ export const ALM = P.createLanguage({
         r.Identifier.skip(P.seq(P.optWhitespace, P.string(":"), P.optWhitespace)),
         r.Arguments.fallback(null),
         r.Identifier
-    ).node(Nodes.FunctionDecl)
-        .map(({ name, value: [ident, args, ret], start, end }) => ({
-            name, start, end,
-            value: { ident, args, ret }
-        })),
+    ).map(([ident, args, ret]) => ({ ident, args, ret }))
+        .node(Nodes.FunctionDecl),
     Axioms: r => section("axioms", r.Axiom.many()),
     Fact: r => r.FunctionLiteral.skip(P.string(".")).node(Nodes.Fact),
     Axiom: r => P.alt(
@@ -305,7 +284,8 @@ export const ALM = P.createLanguage({
         })),
     Query: r => commaSeparated(r.FunctionLiteral).skip(P.string(".").skip(P.optWhitespace)),
     String: r => P.regexp(/"((?:\\.|.)*?)"/, 1),
-    QueryVars: r => commaSeparated(r.Variable).wrap(P.string('"'), P.string('"'))
+    QueryVars: r => commaSeparated(r.Variable)
+        .trim(P.string('"'))
         .map(x => x.map(y => y.value)),
     QueryResult: r => P.seq(
         r.String.skip(P.string(",")),
