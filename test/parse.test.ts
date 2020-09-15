@@ -22,13 +22,13 @@ describe("Parsing", () => {
         expect(results.value).to.equal("X");
     });
 
-    it("FunctionTerm", () => {
-        const result1 = ALM.FunctionTerm.tryParse("f(A)");
+    it("BooleanFunctionTerm", () => {
+        const result1 = ALM.BooleanFunctionTerm.tryParse("f(A)");
         expect(result1.value.negated).to.be.false;
         expect(result1.value.fn.value).to.equal("f");
         expect(result1.value.args[0].value.value).to.equal("A");
 
-        const result2 = ALM.FunctionTerm.tryParse("-f(A)");
+        const result2 = ALM.BooleanFunctionTerm.tryParse("-f(A)");
         expect(result2.value.fn.value).to.equal("f");
         expect(result2.value.args[0].value.value).to.equal("A");
         expect(result2.value.negated).to.be.true;
@@ -36,15 +36,15 @@ describe("Parsing", () => {
 
     it("FunctionAssignment", () => {
         const result1 = ALM.FunctionAssignment.tryParse("f(A) = g");
-        expect(result1.value.fnTerm.value.fn.value).to.equal("f");
+        expect(result1.value.fnTerm[0].value).to.equal("f");
         expect(result1.value.operator).to.equal(Nodes.Eq);
-        expect(result1.value.fnTerm.value.args[0].value.value).to.equal("A");
+        expect(result1.value.fnTerm[1][0].value.value).to.equal("A");
         expect(result1.value.ret.value.value).to.equal("g");
 
         const result2 = ALM.FunctionAssignment.tryParse("a(X) != b");
-        expect(result2.value.fnTerm.value.fn.value).to.equal("a");
+        expect(result2.value.fnTerm[0].value).to.equal("a");
         expect(result2.value.operator).to.equal(Nodes.Neq);
-        expect(result2.value.fnTerm.value.args[0].value.value).to.equal("X");
+        expect(result2.value.fnTerm[1][0].value.value).to.equal("X");
         expect(result2.value.ret.value.value).to.equal("b");
     });
 
@@ -63,7 +63,7 @@ describe("Parsing", () => {
         expect(result2.value.args!.map(x => (x.value as any).value)).to.deep.equal(["A"]);
         expect((result2.value.ret as any)).to.be.true;
         expect(result2.value.negated).to.be.false;
-        expect((result2.value.node as any).name).to.equal(Nodes.FunctionTerm);
+        expect((result2.value.node as any).name).to.equal("BooleanFunctionTerm");
 
         const result3: FunctionLiteral = ALM.FunctionLiteral.tryParse("-f(A)");
         expect(result3.name).to.equal(Nodes.FunctionLiteral);
@@ -71,7 +71,7 @@ describe("Parsing", () => {
         expect(result3.value.args!.map(x => (x.value as any).value)).to.deep.equal(["A"]);
         expect((result3.value.ret as any)).to.be.true;
         expect(result3.value.negated).to.be.true;
-        expect((result3.value.node as any).name).to.equal(Nodes.FunctionTerm);
+        expect((result3.value.node as any).name).to.equal(Nodes.BooleanFunctionTerm);
 
         const result4: FunctionLiteral = ALM.FunctionLiteral.tryParse("f");
         expect(result4.name).to.equal(Nodes.FunctionLiteral);
@@ -328,8 +328,8 @@ describe("Parsing", () => {
 
     it("Query", () => {
         const result1 = ALM.Query.tryParse(`
-        active_filter = Filter,
         visible(Todo),
+        active_filter = Filter,
         active(Todo).
         `);
         expect(result1.map((x: any) => x.value.fn))

@@ -7,7 +7,7 @@ export const Nodes = {
     BasicTerm: "BasicTerm",
     ArithmeticTerm: "ArithmeticTerm",
     Term: "Term",
-    FunctionTerm: "FunctionTerm",
+    BooleanFunctionTerm: "BooleanFunctionTerm",
     FunctionLiteral: "FunctionLiteral",
     Statics: "Statics",
     DefinedFluents: "DefinedFluents",
@@ -34,20 +34,21 @@ export type ArithmeticTerm = P.Node<"ArithmeticTerm", [BasicArithmeticTerm, Arit
 export type ComparisonRel = ">" | ">=" | "<" | "<=";
 export type ArithmeticRel = ComparisonRel | "=" | "!=";
 export type Term = ArithmeticTerm | BasicTerm;
-export type FunctionTerm = P.Node<"FunctionTerm", { negated: boolean, fn: Identifier, args: BasicTerm[] }>
+export type FunctionTerm = [Identifier, BasicTerm]
+export type BooleanFunctionTerm = P.Node<"BooleanFunctionTerm", { negated: boolean, fn: Identifier, args: BasicTerm[] }>
 export type FunctionAssignment = P.Node<"FunctionAssignment", {
-    fnTerm: FunctionTerm | Identifier,
+    fnTerm: FunctionAssignment | Identifier,
     operator: "=" | "!=",
     ret: Term
 }>;
 /** Only used internally for type safety. */
-type FunctionLiteralInput = FunctionAssignment | FunctionTerm | [("-" | null), Identifier];
+type FunctionLiteralInput = FunctionAssignment | BooleanFunctionTerm | [("-" | null), Identifier];
 export type FunctionLiteral = P.Node<"FunctionLiteral", {
     fn: string,
     args?: Term[],
     ret: Term | true,
     negated: boolean,
-    node: FunctionAssignment | FunctionTerm | Identifier,
+    node: FunctionAssignment | BooleanFunctionTerm | Identifier,
 }>;
 export type ArithmeticExpression = P.Node<"ArithmeticExpression", [Term, ArithmeticRel, Term]>
 export type Literal = FunctionLiteral | ArithmeticExpression;
@@ -117,15 +118,17 @@ export const ALM = P.createLanguage({
     Term: r => P.alt(r.ArithmeticTerm, r.BasicTerm),
     Negation: () => P.string("-").desc("negation (-)").fallback(null),
     FunctionTerm: r => P.seq(
-        r.Negation,
         r.Identifier,
         commaSeparated(r.BasicTerm)
-            .wrap(P.string("("), P.string(")")))
-        .map(([negated, fn, args]) => ({
-            negated: Boolean(negated),
-            fn,
-            args
-        })).node(Nodes.FunctionTerm),
+            .wrap(P.string("("), P.string(")"))),
+    BooleanFunctionTerm: r => P.seq(
+        r.Negation,
+        r.FunctionTerm
+    ).map(([negated, [fn, args]]: any) => ({
+        negated: Boolean(negated),
+        fn,
+        args
+    })).node(Nodes.BooleanFunctionTerm),
     FunctionAssignment: r => sepByWhiteSpace(
         P.alt(r.FunctionTerm, r.Identifier),
         P.alt(r.Eq, r.Neq),
@@ -139,20 +142,19 @@ export const ALM = P.createLanguage({
         .node(Nodes.FunctionAssignment),
     FunctionLiteral: r => P.alt(
         r.FunctionAssignment,
-        r.FunctionTerm,
+        r.BooleanFunctionTerm,
         P.seq(r.Negation, r.Identifier))
         .map((_n): FunctionLiteral["value"] => {
             const n = _n as unknown as FunctionLiteralInput;
             switch (true) {
                 case "name" in n && n.name === Nodes.FunctionAssignment: {
                     const { fnTerm, ret, operator } = (n as FunctionAssignment).value;
-                    if (fnTerm.name === "FunctionTerm") {
-                        const { args, fn, negated } = fnTerm.value;
+                    if (Array.isArray(fnTerm)) {
+                        const [fn, args] = fnTerm;
                         // Some day we should throw an error forbidding a term to be negated
                         // in two places. 
-                        const neg = negated || operator === "!=";
                         return {
-                            negated: neg,
+                            negated: operator === "!=",
                             fn: fn.value,
                             args,
                             ret,
@@ -161,17 +163,17 @@ export const ALM = P.createLanguage({
                     } else {
                         return {
                             negated: operator === "!=",
-                            fn: fnTerm.value,
+                            fn: (fnTerm as Identifier).value,
                             args: [],
                             ret,
                             node: n as FunctionAssignment
                         };
                     }
                 }
-                case "name" in n && n.name === Nodes.FunctionTerm: {
-                    const { fn: { value: fn }, args, negated } = (n as FunctionTerm).value;
+                case "name" in n && n.name === Nodes.BooleanFunctionTerm: {
+                    const { fn: { value: fn }, args, negated } = (n as BooleanFunctionTerm).value;
                     return {
-                        negated, fn, args: args, ret: true, node: n as FunctionTerm
+                        negated, fn, args: args, ret: true, node: n as BooleanFunctionTerm
                     };
                 }
                 case Array.isArray(n): {
