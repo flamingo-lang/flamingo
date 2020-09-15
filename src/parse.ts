@@ -115,8 +115,6 @@ export const ALM = P.createLanguage({
                     const { fnTerm, ret, operator } = (n as FunctionAssignment).value;
                     if (Array.isArray(fnTerm)) {
                         const [fn, args] = fnTerm;
-                        // Some day we should throw an error forbidding a term to be negated
-                        // in two places. 
                         return {
                             negated: operator === "!=",
                             fn: fn.value,
