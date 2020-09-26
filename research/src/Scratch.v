@@ -7,16 +7,14 @@ Set Asymmetric Patterns.
 Inductive Term : Set := 
     | NumTerm : nat -> Term
     | Plus : Term -> Term -> Term
-    | Var : nat -> Term
     .
+Compute NumTerm 7.
 
 Fixpoint termDenote (t : Term) : nat := 
 match t with
 | NumTerm n => n
 | Plus n n' => (termDenote n) + (termDenote n')
 end.
-
-Compute termDenote (Plus (Plus (NumTerm 0) (NumTerm 5)) (NumTerm 7)).
 
 Inductive RelOp : Set := 
     | Eq
@@ -31,11 +29,17 @@ match r with
 | Lte => le
 end.
 
+
+(* decidable p = p \/ ~p.  *)
+
 Lemma rels_are_decidable : forall (p : Prop) (r: RelOp) (n1 n2 : nat), (relOpDenote r) n1 n2  = p -> decidable p.
 Proof.
-    intros. destruct r; unfold decidable in *; crush.
+    intros. destruct r.
+    - unfold decidable. crush.
+    - unfold decidable. crush.
+    - unfold decidable. crush.
 Qed.
-
+    
 Lemma conj_decidable : forall (p1 p2 : Prop), decidable p1 /\ decidable p2 -> decidable (p1 /\ p2).
 Proof. intros. crush. Qed.
 
@@ -49,25 +53,18 @@ Inductive Formula : Set :=
     | Exists : (nat -> Formula) -> Formula
     .
 
-Check Exists (fun x : nat => Rel (NumTerm 7) Lte (NumTerm x)).
 
-
-
-
-Definition quantifier_free (f: Formula) : bool :=
+Fixpoint quantifier_free (f: Formula) : bool :=
     match f with 
     | ForAll _ => false
     | Exists _  => false
-    | _ => true
+    | And f1 f2 => (quantifier_free f1) && (quantifier_free f2)
+    | Or f1 f2 => (quantifier_free f1) && (quantifier_free f2)
+    | Not f' => quantifier_free f'
+    | Rel _ _ _ => true
     end.
 
-Check forall n : nat, n = n.
-
-Definition EliminateQuantifier (f : nat -> Formula) : Formula * Prop. Admitted.
-
-Fixpoint Cooper (f : ) : Prop :=
-match f with
-| Exists f' => 
+Lemma quantifier_free_conj : forall (f1 f2: formula)
 
 Fixpoint formDenote (f : Formula) : Prop := 
 match f with
@@ -80,14 +77,23 @@ match f with
 end.
 
 Hint Resolve rels_are_decidable.
-
+Hint Resolve conj_decidable.
 Theorem quantifier_free_formulas_are_decidable : forall (f : Formula) (p : Prop),
   quantifier_free f = true ->
   formDenote f = p ->
   decidable p.
 Proof.
-intros f. induction f; eauto; intros; crush.
+intros f. induction f; intros; eauto.
+- intros. crush. apply conj_decidable. crush.
+- crush.
 Qed.
+
+Fixpoint Cooper (f : ) : Prop :=
+match f with
+| Exists f' => 
+
+
+
 
 
 
@@ -96,3 +102,4 @@ Theorem formulas_are_decidable : forall (f : Formula) (p : Prop),
 Proof.
 Admitted.
 
+Definition EliminateQuantifier (f : nat -> Formula) : Formula * Prop. Admitted.
